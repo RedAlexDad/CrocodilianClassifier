@@ -5,8 +5,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from configs import MLPConfig, CNNConfig, MobileNetConfig
-from models import MLPModel, CNNModel, MobileNetModel
+from configs import MLPConfig, CNNConfig, ResNetConfig
+from models import MLPModel, CNNModel, ResNet20Model
 from utils import (
     load_data, create_dataloaders, Trainer,
     export_to_onnx, get_device, set_seed, validate,
@@ -248,9 +248,9 @@ def train_cnn(optimizer_name='sgd', seed=42, epochs=None, lr=None):
     return best_acc
 
 
-def train_mobilenet(optimizer_name='adam', seed=42, epochs=None, epochs_stage1=None, finetune_layers=None, lr=None, lr_finetune=None):
+def train_resnet20(optimizer_name='adam', seed=42, epochs=None, epochs_stage1=None, finetune_layers=None, lr=None, lr_finetune=None):
     """
-    Обучение MobileNetV2 (transfer learning)
+    Обучение ResNet20 (transfer learning)
 
     Args:
         optimizer_name: Название оптимизатора ('adam', 'adagrad', 'rmsprop')
@@ -265,10 +265,10 @@ def train_mobilenet(optimizer_name='adam', seed=42, epochs=None, epochs_stage1=N
         best_acc: Лучшая точность валидации
     """
     print("\n" + "="*60)
-    print("Обучение MobileNetV2 (Transfer Learning)")
+    print("Обучение ResNet20 (Transfer Learning)")
     print("="*60)
 
-    config = MobileNetConfig()
+    config = ResNetConfig()
     config.setup_dirs()
     device = get_device()
     set_seed(seed)
@@ -296,16 +296,16 @@ def train_mobilenet(optimizer_name='adam', seed=42, epochs=None, epochs_stage1=N
     dataloader = create_dataloaders(
         train_X, train_y, test_X, test_y,
         config,
-        model_type='mobilenet'
+        model_type='resnet20'
     )
 
     # Создание модели
-    model = MobileNetModel(
+    model = ResNet20Model(
         num_classes=len(config.CLASSES),
         pretrained=config.PRETRAINED
     ).to(device)
 
-    print(f"\nАрхитектура MobileNetV2:")
+    print(f"\nАрхитектура ResNet20:")
     print(model)
 
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
@@ -402,5 +402,5 @@ def train_mobilenet(optimizer_name='adam', seed=42, epochs=None, epochs_stage1=N
         (3, config.IMAGE_SIZE, config.IMAGE_SIZE), device
     )
     
-    print(f"\n📊 Итоговая точность MobileNetV2 ({optimizer_name.upper()}): {best_acc:.2f}%")
+    print(f"\n📊 Итоговая точность ResNet20 ({optimizer_name.upper()}): {best_acc:.2f}%")
     return best_acc

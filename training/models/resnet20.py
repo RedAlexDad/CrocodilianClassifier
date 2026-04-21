@@ -1,5 +1,5 @@
 """
-MobileNetV2 модель для классификации изображений
+ResNet20 модель для классификации изображений
 Transfer Learning с предобученными весами ImageNet
 """
 import torch
@@ -7,24 +7,24 @@ import torch.nn as nn
 from torchvision import models
 
 
-class MobileNetModel(nn.Module):
+class ResNet20Model(nn.Module):
     """
-    MobileNetV2 с Transfer Learning
+    ResNet20 с Transfer Learning
     
     Архитектура:
-        MobileNetV2 Backbone (ImageNet weights) -> 
+        ResNet20 Backbone (ImageNet weights) -> 
         Dropout -> Linear (num_classes)
     """
     def __init__(self, num_classes=3, pretrained=True, dropout=0.3):
-        super(MobileNetModel, self).__init__()
+        super(ResNet20Model, self).__init__()
         
-        # Загрузка предобученной модели
-        weights = models.MobileNet_V2_Weights.IMAGENET1K_V1 if pretrained else None
-        self.backbone = models.mobilenet_v2(weights=weights)
+        # Загрузка предобученной модели ResNet20
+        weights = models.ResNet20_Weights.IMAGENET1K_V1 if pretrained else None
+        self.backbone = models.resnet20(weights=weights)
         
         # Замена классификатора
-        in_features = self.backbone.classifier[1].in_features
-        self.backbone.classifier = nn.Sequential(
+        in_features = self.backbone.fc.in_features
+        self.backbone.fc = nn.Sequential(
             nn.Dropout(dropout),
             nn.Linear(in_features, num_classes)
         )
@@ -37,10 +37,10 @@ class MobileNetModel(nn.Module):
     
     def freeze_base(self):
         """Заморозить базовую модель (обучать только классификатор)"""
-        for param in self.backbone.features.parameters():
+        for param in self.backbone.parameters():
             param.requires_grad = False
         # Классификатор оставляем размороженным
-        for param in self.backbone.classifier.parameters():
+        for param in self.backbone.fc.parameters():
             param.requires_grad = True
     
     def freeze_all(self):
@@ -74,9 +74,9 @@ class MobileNetModel(nn.Module):
         return total - n, n  # frozen_count, unfrozen_count
 
 
-def create_mobilenet(config, num_classes):
-    """Фабричная функция для создания MobileNetV2"""
-    return MobileNetModel(
+def create_resnet20(config, num_classes):
+    """Фабричная функция для создания ResNet20"""
+    return ResNet20Model(
         num_classes=num_classes,
         pretrained=config.PRETRAINED,
         dropout=0.3

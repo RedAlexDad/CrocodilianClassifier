@@ -1,5 +1,5 @@
 from .mlp import MLPModel
 from .cnn import CNNModel
-from .mobilenet import MobileNetModel
+from .resnet20 import ResNet20Model
 
-__all__ = ['MLPModel', 'CNNModel', 'MobileNetModel']
+__all__ = ['MLPModel', 'CNNModel', 'ResNet20Model']

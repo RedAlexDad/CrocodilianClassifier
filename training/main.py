@@ -3,7 +3,7 @@
 Главный скрипт для обучения моделей классификации:
 - MLP (многослойный перцептрон)
 - CNN (свёрточная нейросеть)
-- MobileNetV2 (transfer learning)
+- ResNet20 (transfer learning)
 
 Использование:
     # Обучение всех моделей
@@ -27,13 +27,13 @@
 import argparse
 import torch
 
-from scripts import train_mlp, train_cnn, train_mobilenet
+from scripts import train_mlp, train_cnn, train_resnet20
 
 
 OPTIMIZERS = ['adam', 'adagrad', 'rmsprop', 'sgd']
 OPTIMIZERS_MLP = ['adam', 'adagrad', 'rmsprop']
 OPTIMIZERS_CNN = ['sgd', 'adam', 'rmsprop']
-OPTIMIZERS_MOBILENET = ['adam', 'adagrad', 'rmsprop']
+OPTIMIZERS_RESNET20 = ['adam', 'adagrad', 'rmsprop']
 
 
 def print_summary(results):
@@ -62,7 +62,7 @@ def main():
     parser.add_argument(
         '--model',
         type=str,
-        choices=['mlp', 'cnn', 'mobilenet', 'all'],
+        choices=['mlp', 'cnn', 'resnet20', 'all'],
         default='all',
         help='Модель для обучения (по умолчанию: all)'
     )
@@ -71,7 +71,7 @@ def main():
         type=str,
         choices=OPTIMIZERS,
         default=None,
-        help=f'Оптимизатор (по умолчанию: adam для MLP/MobileNet, sgd для CNN)'
+        help=f'Оптимизатор (по умолчанию: adam для MLP/ResNet20, sgd для CNN)'
     )
     parser.add_argument(
         '--epochs',
@@ -144,8 +144,8 @@ def main():
         models_to_train = ['mlp']
     elif args.model == 'cnn':
         models_to_train = ['cnn']
-    elif args.model == 'mobilenet':
-        models_to_train = ['mobilenet']
+    elif args.model == 'resnet20':
+        models_to_train = ['resnet20']
     else:  # all
         models_to_train = ['mlp', 'cnn', 'mobilenet']
     
@@ -158,7 +158,7 @@ def main():
             elif model_type == 'cnn':
                 optimizers = OPTIMIZERS_CNN
             else:
-                optimizers = OPTIMIZERS_MOBILENET
+                optimizers = OPTIMIZERS_RESNET20
             
             print(f"\n{'='*60}")
             print(f"Сравнение оптимизаторов для {model_type.upper()}")
@@ -185,6 +185,8 @@ def main():
                     optimizer = 'adam'
                 elif model_type == 'cnn':
                     optimizer = 'sgd'
+                elif model_type == 'resnet20':
+                    optimizer = 'adam'
                 else:
                     optimizer = 'adam'
             
@@ -209,8 +211,8 @@ def train_model(model_type, optimizer, seed, epochs=None, epochs_stage1=None, fi
         return train_mlp(optimizer_name=optimizer, seed=seed, epochs=epochs, lr=lr)
     elif model_type == 'cnn':
         return train_cnn(optimizer_name=optimizer, seed=seed, epochs=epochs, lr=lr)
-    elif model_type == 'mobilenet':
-        return train_mobilenet(
+    elif model_type == 'resnet20':
+        return train_resnet20(
             optimizer_name=optimizer, 
             seed=seed, 
             epochs=epochs, 

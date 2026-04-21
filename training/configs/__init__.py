@@ -1,3 +1,3 @@
-from .config import Config, MLPConfig, CNNConfig, MobileNetConfig
+from .config import Config, MLPConfig, CNNConfig, ResNetConfig
 
-__all__ = ['Config', 'MLPConfig', 'CNNConfig', 'MobileNetConfig']
+__all__ = ['Config', 'MLPConfig', 'CNNConfig', 'ResNetConfig']
