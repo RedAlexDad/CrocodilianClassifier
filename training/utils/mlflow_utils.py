@@ -87,7 +87,7 @@ def log_sample_images(images, labels, class_names, num_samples=5, predictions=No
     """Логировать образцы изображений как артефакты с предсказаниями
 
     Args:
-        images: изображения (N, C, H, W)
+        images: изображения (N, C, H, W) или (N, flattened) для MLP
         labels: истинные метки
         class_names: названия классов
         num_samples: количество образцов на класс
@@ -95,6 +95,20 @@ def log_sample_images(images, labels, class_names, num_samples=5, predictions=No
         probabilities: вероятности предсказаний (опционально)
     """
     import matplotlib.pyplot as plt
+
+    images = np.array(images)
+
+    if images.ndim == 2:
+        side = int(np.sqrt(images.shape[1]))
+        if side * side == images.shape[1] // 3:
+            channels = 3
+            side = int(np.sqrt(images.shape[1] // 3))
+            images = images.reshape(-1, channels, side, side)
+        elif side * side == images.shape[1]:
+            images = images.reshape(-1, 1, side, side)
+
+    if images.ndim != 4 or images.shape[1] not in (1, 3):
+        return
 
     unique_labels = list(set(labels))
     num_classes = len(unique_labels)
@@ -104,11 +118,7 @@ def log_sample_images(images, labels, class_names, num_samples=5, predictions=No
         if len(samples_per_class[label]) < num_samples:
             samples_per_class[label].append(idx)
 
-    all_indices = []
-    for label in unique_labels:
-        all_indices.extend(samples_per_class[label][:num_samples])
-
-    if not all_indices:
+    if not samples_per_class:
         return
 
     fig, axes = plt.subplots(
@@ -119,7 +129,7 @@ def log_sample_images(images, labels, class_names, num_samples=5, predictions=No
     if num_samples == 1:
         axes = [[ax] for ax in axes]
     else:
-        axes = [axes[i] if isinstance(axes[i], list) else list(axes[i]) for i in range(len(axes))]
+        axes = [list(row) if not isinstance(row, list) else row for row in axes]
 
     for row, label in enumerate(unique_labels):
         for col, idx in enumerate(samples_per_class[label][:num_samples]):
