@@ -27,7 +27,7 @@
 import argparse
 import torch
 
-from scripts import train_mlp, train_cnn, train_resnet20
+from scripts import train_mlp, train_cnn, train_resnet20, get_optimizer
 
 
 OPTIMIZERS = ['adam', 'adagrad', 'rmsprop', 'sgd']
