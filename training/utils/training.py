@@ -351,12 +351,18 @@ class Trainer:
                 test_images = np.concatenate(test_images, axis=0)
                 test_labels = np.concatenate(test_labels, axis=0)
 
+                print(f"  test_images shape: {test_images.shape}")
+                print(f"  test_labels shape: {test_labels.shape}")
+
                 self.model.eval()
                 with torch.no_grad():
                     x_tensor = torch.tensor(test_images).to(device)
                     outputs = self.model(x_tensor)
                     probs = torch.softmax(outputs, dim=1).cpu().numpy()
                     preds = probs.argmax(axis=1)
+
+                print(f"  probs shape: {probs.shape}")
+                print(f"  preds shape: {preds.shape}")
 
                 log_sample_images(
                     test_images,

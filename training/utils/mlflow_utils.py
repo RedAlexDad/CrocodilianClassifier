@@ -99,18 +99,19 @@ def log_sample_images(images, labels, class_names, num_samples=5, predictions=No
     images = np.array(images)
 
     if images.ndim == 2:
-        side = int(np.sqrt(images.shape[1]))
-        if side * side == images.shape[1] // 3:
+        size = images.shape[1]
+        if size % 3 == 0:
             channels = 3
-            side = int(np.sqrt(images.shape[1] // 3))
-            images = images.reshape(-1, channels, side, side)
-        elif side * side == images.shape[1]:
-            images = images.reshape(-1, 1, side, side)
+            flat_size = size // channels
+            side = int(np.sqrt(flat_size))
+            if side * side == flat_size:
+                images = images.reshape(-1, channels, side, side)
 
     if images.ndim != 4 or images.shape[1] not in (1, 3):
+        print(f"  log_sample_images: invalid image shape {images.shape}")
         return
 
-    unique_labels = list(set(labels))
+    unique_labels = sorted(list(set(labels)))
     num_classes = len(unique_labels)
 
     samples_per_class = {label: [] for label in unique_labels}
@@ -118,7 +119,7 @@ def log_sample_images(images, labels, class_names, num_samples=5, predictions=No
         if len(samples_per_class[label]) < num_samples:
             samples_per_class[label].append(idx)
 
-    if not samples_per_class:
+    if not any(samples_per_class.values()):
         return
 
     fig, axes = plt.subplots(
@@ -128,19 +129,20 @@ def log_sample_images(images, labels, class_names, num_samples=5, predictions=No
         axes = [axes]
     if num_samples == 1:
         axes = [[ax] for ax in axes]
-    else:
-        axes = [list(row) if not isinstance(row, list) else row for row in axes]
 
     for row, label in enumerate(unique_labels):
-        for col, idx in enumerate(samples_per_class[label][:num_samples]):
-            ax = axes[row][col] if num_classes > 1 else axes[col]
+        indices = samples_per_class[label][:num_samples]
+        for col, idx in enumerate(indices):
+            if num_classes > 1:
+                ax = axes[row][col]
+            else:
+                ax = axes[col]
             img = images[idx].copy()
 
             if img.shape[0] == 3:
                 img = img.transpose(1, 2, 0)
 
-            if img.min() < 0:
-                img = (img - img.min()) / (img.max() - img.min() + 1e-8)
+            img = img.clip(0, 1)
 
             ax.imshow(img)
 
@@ -168,11 +170,11 @@ def log_sample_images(images, labels, class_names, num_samples=5, predictions=No
 
     plt.tight_layout()
 
-    buf = io.BytesIO()
-    plt.savefig(buf, format="png", dpi=100)
+    temp_path = "/tmp/sample_images.png"
+    plt.savefig(temp_path, format="png", dpi=100)
     plt.close()
 
-    mlflow.log_artifact(buf.getvalue(), "sample_images.png")
+    mlflow.log_artifact(temp_path)
 
 
 def log_confusion_matrix(y_true, y_pred, class_names):
