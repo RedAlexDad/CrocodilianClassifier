@@ -15,6 +15,9 @@ from utils import (
     set_seed,
     validate,
     print_classification_report,
+    setup_mlflow,
+    log_metrics,
+    log_params,
 )
 
 
@@ -28,6 +31,17 @@ def train_cnn(optimizer_name="sgd", seed=42, epochs=None, lr=None):
     config.setup_dirs()
     device = get_device()
     set_seed(seed)
+
+    # MLflow
+    mlflow = setup_mlflow()
+    log_params({
+        "model": "CNN",
+        "optimizer": optimizer_name,
+        "seed": seed,
+        "epochs": epochs or config.EPOCHS,
+        "lr": lr or config.LEARNING_RATE,
+        "batch_size": config.BATCH_SIZE,
+    })
 
     if epochs is not None:
         config.EPOCHS = epochs
@@ -67,6 +81,10 @@ def train_cnn(optimizer_name="sgd", seed=42, epochs=None, lr=None):
     best_acc = trainer.train(
         dataloader, epochs=config.EPOCHS, model_name=config.MODEL_NAME, log_every=50
     )
+
+    # MLflow логирование
+    if best_acc:
+        log_metrics(0, trainer.history["train_loss"][-1], best_acc)
 
     _, _, y_true, y_pred = validate(model, dataloader["test"], criterion, device)
     print_classification_report(y_true, y_pred, config.CLASSES, "Test")
