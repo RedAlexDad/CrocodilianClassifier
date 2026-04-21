@@ -30,6 +30,8 @@ export function ModelManagementWidget() {
   const [mlflowRuns, setMlflowRuns] = useState<MlflowRun[]>([]);
   const [loadingRuns, setLoadingRuns] = useState(false);
   const [downloadingRun, setDownloadingRun] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'date' | 'accuracy' | 'name'>('date');
+  const [groupByModel, setGroupByModel] = useState(false);
 
   const loadModels = useCallback(async () => {
     setLoading(true);
@@ -148,7 +150,7 @@ export function ModelManagementWidget() {
         body: formData,
       });
       const data = await res.json();
-      
+
       if (data.success) {
         setSuccess(`Модель загружена из MLflow`);
         loadModels();
@@ -161,6 +163,39 @@ export function ModelManagementWidget() {
       setDownloadingRun(null);
     }
   }, [loadModels]);
+
+  const getSortedAndGroupedRuns = useCallback(() => {
+    let sorted = [...mlflowRuns];
+
+    // Сортировка
+    switch (sortBy) {
+      case 'accuracy':
+        sorted.sort((a, b) => (b.accuracy || 0) - (a.accuracy || 0));
+        break;
+      case 'name':
+        sorted.sort((a, b) => (a.model_name || '').localeCompare(b.model_name || ''));
+        break;
+      case 'date':
+      default:
+        sorted.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        break;
+    }
+
+    // Группировка
+    if (groupByModel) {
+      const grouped: { [key: string]: MlflowRun[] } = {};
+      sorted.forEach(run => {
+        const model = run.model_name || 'Unknown';
+        if (!grouped[model]) {
+          grouped[model] = [];
+        }
+        grouped[model].push(run);
+      });
+      return grouped;
+    }
+
+    return sorted;
+  }, [mlflowRuns, sortBy, groupByModel]);
 
   return (
     <div className="model-management">
@@ -260,48 +295,115 @@ export function ModelManagementWidget() {
               ) : mlflowRuns.length === 0 ? (
                 <p>Нет моделей в MLflow</p>
               ) : (
-                <div className="runs-list">
-                  {mlflowRuns.map(run => (
-                    <div key={run.run_id} className="run-item">
-                      <div className="run-info">
-                        <div className="run-header">
-                          <span className="model-name">{run.model_name || 'Unknown'}</span>
-                          {run.optimizer && <span className="optimizer">{run.optimizer}</span>}
-                        </div>
-                        <div className="run-metrics">
-                          {run.accuracy !== null && run.accuracy !== undefined && (
-                            <span className="metric">Accuracy: {(run.accuracy * 100).toFixed(2)}%</span>
-                          )}
-                          {run.precision !== null && run.precision !== undefined && (
-                            <span className="metric">Precision: {(run.precision * 100).toFixed(2)}%</span>
-                          )}
-                          {run.recall !== null && run.recall !== undefined && (
-                            <span className="metric">Recall: {(run.recall * 100).toFixed(2)}%</span>
-                          )}
-                          {run.f1_score !== null && run.f1_score !== undefined && (
-                            <span className="metric">F1: {(run.f1_score * 100).toFixed(2)}%</span>
-                          )}
-                        </div>
-                        <div className="run-meta">
-                          <span className="run-date">{run.date || 'N/A'}</span>
-                          <span className="run-id-short">{run.run_id.substring(0, 8)}...</span>
-                        </div>
-                      </div>
-                      <button
-                        className="download-btn"
-                        onClick={() => downloadFromMlflow(run.run_id)}
-                        disabled={downloadingRun === run.run_id}
-                      >
-                        {downloadingRun === run.run_id ? (
-                          <Loader2 className="spin" size={16} />
-                        ) : (
-                          <Download size={16} />
-                        )}
-                        Загрузить
-                      </button>
+                <>
+                  <div className="filter-controls">
+                    <div className="filter-group">
+                      <label>Сортировка:</label>
+                      <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}>
+                        <option value="date">По дате</option>
+                        <option value="accuracy">По точности</option>
+                        <option value="name">По названию</option>
+                      </select>
                     </div>
-                  ))}
-                </div>
+                    <div className="filter-group">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={groupByModel}
+                          onChange={e => setGroupByModel(e.target.checked)}
+                        />
+                        Группировать по модели
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="runs-list">
+                    {groupByModel ? (
+                      Object.entries(getSortedAndGroupedRuns() as { [key: string]: MlflowRun[] }).map(([modelName, runs]) => (
+                        <div key={modelName} className="model-group">
+                          <h4 className="group-title">{modelName} ({runs.length})</h4>
+                          {runs.map(run => (
+                            <div key={run.run_id} className="run-item">
+                              <div className="run-info">
+                                <div className="run-metrics">
+                                  {run.accuracy !== null && run.accuracy !== undefined && (
+                                    <span className="metric">Accuracy: {(run.accuracy * 100).toFixed(2)}%</span>
+                                  )}
+                                  {run.precision !== null && run.precision !== undefined && (
+                                    <span className="metric">Precision: {(run.precision * 100).toFixed(2)}%</span>
+                                  )}
+                                  {run.recall !== null && run.recall !== undefined && (
+                                    <span className="metric">Recall: {(run.recall * 100).toFixed(2)}%</span>
+                                  )}
+                                  {run.f1_score !== null && run.f1_score !== undefined && (
+                                    <span className="metric">F1: {(run.f1_score * 100).toFixed(2)}%</span>
+                                  )}
+                                </div>
+                                <div className="run-meta">
+                                  <span className="run-date">{run.date || 'N/A'}</span>
+                                  <span className="run-id-short">{run.run_id.substring(0, 8)}...</span>
+                                </div>
+                              </div>
+                              <button
+                                className="download-btn"
+                                onClick={() => downloadFromMlflow(run.run_id)}
+                                disabled={downloadingRun === run.run_id}
+                              >
+                                {downloadingRun === run.run_id ? (
+                                  <Loader2 className="spin" size={16} />
+                                ) : (
+                                  <Download size={16} />
+                                )}
+                                Загрузить
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ))
+                    ) : (
+                      (getSortedAndGroupedRuns() as MlflowRun[]).map(run => (
+                        <div key={run.run_id} className="run-item">
+                          <div className="run-info">
+                            <div className="run-header">
+                              <span className="model-name">{run.model_name || 'Unknown'}</span>
+                              {run.optimizer && <span className="optimizer">{run.optimizer}</span>}
+                            </div>
+                            <div className="run-metrics">
+                              {run.accuracy !== null && run.accuracy !== undefined && (
+                                <span className="metric">Accuracy: {(run.accuracy * 100).toFixed(2)}%</span>
+                              )}
+                              {run.precision !== null && run.precision !== undefined && (
+                                <span className="metric">Precision: {(run.precision * 100).toFixed(2)}%</span>
+                              )}
+                              {run.recall !== null && run.recall !== undefined && (
+                                <span className="metric">Recall: {(run.recall * 100).toFixed(2)}%</span>
+                              )}
+                              {run.f1_score !== null && run.f1_score !== undefined && (
+                                <span className="metric">F1: {(run.f1_score * 100).toFixed(2)}%</span>
+                              )}
+                            </div>
+                            <div className="run-meta">
+                              <span className="run-date">{run.date || 'N/A'}</span>
+                              <span className="run-id-short">{run.run_id.substring(0, 8)}...</span>
+                            </div>
+                          </div>
+                          <button
+                            className="download-btn"
+                            onClick={() => downloadFromMlflow(run.run_id)}
+                            disabled={downloadingRun === run.run_id}
+                          >
+                            {downloadingRun === run.run_id ? (
+                              <Loader2 className="spin" size={16} />
+                            ) : (
+                              <Download size={16} />
+                            )}
+                            Загрузить
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </div>
