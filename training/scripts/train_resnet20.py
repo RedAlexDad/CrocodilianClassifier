@@ -35,7 +35,7 @@ def train_resnet20(
 
     # MLflow with named run
     import mlflow
-    setup_mlflow()
+    setup_mlflow(experiment_name="ResNet20")
     run_name = f"ResNet20_{optimizer_name}"
 
     with mlflow.start_run(run_name=run_name):

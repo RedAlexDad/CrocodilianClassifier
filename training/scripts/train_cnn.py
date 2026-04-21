@@ -35,7 +35,7 @@ def train_cnn(optimizer_name="sgd", seed=42, epochs=None, lr=None):
 
     # MLflow setup with named run
     import mlflow
-    setup_mlflow()
+    setup_mlflow(experiment_name="CNN")
     run_name = f"CNN_{optimizer_name}_e{epochs or config.EPOCHS}"
 
     with mlflow.start_run(run_name=run_name):

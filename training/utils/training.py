@@ -261,7 +261,7 @@ class Trainer:
                 plt.tight_layout()
                 plt.savefig("/tmp/training_plot.png", dpi=100)
                 plt.close()
-                mlflow.log_artifact("/tmp/training_plot.png", "plots")
+                mlflow.log_artifact("/tmp/training_plot.png")
             except Exception:
                 pass
 
@@ -303,7 +303,7 @@ class Trainer:
             plt.tight_layout()
             plt.savefig("/tmp/confusion_matrix.png", dpi=100)
             plt.close()
-            mlflow.log_artifact("/tmp/confusion_matrix.png", "artifacts")
+            mlflow.log_artifact("/tmp/confusion_matrix.png")
 
             # Normalized Confusion Matrix
             cm_norm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
@@ -317,7 +317,7 @@ class Trainer:
             plt.tight_layout()
             plt.savefig("/tmp/confusion_matrix_normalized.png", dpi=100)
             plt.close()
-            mlflow.log_artifact("/tmp/confusion_matrix_normalized.png", "artifacts")
+            mlflow.log_artifact("/tmp/confusion_matrix_normalized.png")
 
             # Classification Report
             report = classification_report(
@@ -327,15 +327,20 @@ class Trainer:
             )
             with open("/tmp/classification_report.txt", "w") as f:
                 f.write(report)
-            mlflow.log_artifact("/tmp/classification_report.txt", "artifacts")
+            mlflow.log_artifact("/tmp/classification_report.txt")
 
             # Save best.pt model
             if checkpoint_path and os.path.exists(checkpoint_path):
-                mlflow.log_artifact(checkpoint_path, "artifacts")
+                mlflow.log_artifact(checkpoint_path)
 
-            # Save ONNX model
+            # Save ONNX model - in onnx/ subfolder like yolo example
             if onnx_path and os.path.exists(onnx_path):
-                mlflow.log_artifact(onnx_path, "artifacts")
+                import shutil
+                import os as os_module
+                onnx_dir = "/tmp/onnx"
+                os_module.makedirs(onnx_dir, exist_ok=True)
+                shutil.copy(onnx_path, os.path.join(onnx_dir, os.path.basename(onnx_path)))
+                mlflow.log_artifacts(onnx_dir, artifact_path="onnx")
 
             # Log final metrics
             mlflow.log_metric("final_val_accuracy", self.best_acc)

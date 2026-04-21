@@ -2,15 +2,15 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files first for better caching
-COPY package*.json tsconfig*.json vite.config.ts ./
+# Copy all files first
+COPY . .
 
-# Install ALL dependencies including dev
+# Install dependencies including dev dependencies  
 RUN npm install
 
-# Copy source code
-COPY . .
+# Build the app using npx
+RUN npx vite build
 
 EXPOSE 5173
 
-CMD ["npm", "run", "dev", "--", "--host", "--port", "5173"]
+CMD ["npx", "vite", "preview", "--port", "5173", "--host"]

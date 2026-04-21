@@ -49,7 +49,7 @@ def train_mlp(optimizer_name="adam", seed=42, epochs=None, lr=None):
 
     # MLflow with named run
     import mlflow
-    setup_mlflow()
+    setup_mlflow(experiment_name="MLP")
     run_name = f"MLP_{optimizer_name}_e{epochs or config.EPOCHS}"
 
     with mlflow.start_run(run_name=run_name):
