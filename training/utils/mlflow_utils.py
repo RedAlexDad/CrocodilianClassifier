@@ -38,14 +38,22 @@ def setup_mlflow(experiment_name=None, tracking_uri=None):
     os.environ["AWS_ACCESS_KEY_ID"] = "minioadmin"
     os.environ["AWS_SECRET_ACCESS_KEY"] = "minioadmin"
 
-    # Enable autolog
+    # Enable autolog with traces
     try:
         mlflow.autolog(
             log_models=False,
             silent=True,
+            log_traces=True,
         )
     except Exception as e:
         print(f"MLflow autolog: {e}")
+
+    # Enable system metrics logging
+    try:
+        from mlflow.system_metrics import enable_system_metrics_logging
+        enable_system_metrics_logging()
+    except Exception as e:
+        print(f"System metrics: {e}")
 
     return mlflow
 
