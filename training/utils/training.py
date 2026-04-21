@@ -344,7 +344,10 @@ class Trainer:
                 test_labels = []
                 for batch_x, batch_y in dataloader["test"]:
                     test_images.append(batch_x.numpy())
-                    test_labels.append(batch_y.numpy())
+                    if batch_y.ndim > 1:
+                        test_labels.append(batch_y.numpy().argmax(axis=1))
+                    else:
+                        test_labels.append(batch_y.numpy())
                 test_images = np.concatenate(test_images, axis=0)
                 test_labels = np.concatenate(test_labels, axis=0)
 
@@ -357,7 +360,7 @@ class Trainer:
 
                 log_sample_images(
                     test_images,
-                    test_labels.argmax(axis=1),
+                    test_labels,
                     class_names or ["крокодил", "аллигатор", "кайман"],
                     num_samples=5,
                     predictions=preds,
@@ -365,7 +368,9 @@ class Trainer:
                 )
                 print("  Логирование sample_images в MLflow")
             except Exception as e:
+                import traceback
                 print(f"  Ошибка sample_images: {e}")
+                traceback.print_exc()
 
             # Log final metrics
             mlflow.log_metric("final_val_accuracy", self.best_acc)
