@@ -4,7 +4,7 @@
 
 from typing import Any, Callable, Dict, List, Optional
 
-from scripts import train_cnn, train_mlp, train_mobilenet, train_resnet20
+from scripts.train_model import train_model
 
 OPTIMIZERS = ["adam", "adagrad", "rmsprop", "sgd"]
 OPTIMIZERS_MLP = ["adam", "adagrad", "rmsprop"]
@@ -14,25 +14,25 @@ OPTIMIZERS_TL = ["adam", "adagrad", "rmsprop"]  # Transfer learning: ResNet20, M
 
 MODEL_CONFIGS = {
     "mlp": {
-        "trainer": train_mlp,
+        "trainer": train_model,
         "default_optimizer": "adam",
         "available_optimizers": OPTIMIZERS_MLP,
         "description": "MLP (многослойный перцептрон)",
     },
     "cnn": {
-        "trainer": train_cnn,
+        "trainer": train_model,
         "default_optimizer": "sgd",
         "available_optimizers": OPTIMIZERS_CNN,
         "description": "CNN (свёрточная нейросеть)",
     },
     "resnet20": {
-        "trainer": train_resnet20,
+        "trainer": train_model,
         "default_optimizer": "adam",
         "available_optimizers": OPTIMIZERS_TL,
         "description": "ResNet20 (transfer learning)",
     },
     "mobilenet": {
-        "trainer": train_mobilenet,
+        "trainer": train_model,
         "default_optimizer": "adam",
         "available_optimizers": OPTIMIZERS_TL,
         "description": "MobileNetV2 (transfer learning)",
