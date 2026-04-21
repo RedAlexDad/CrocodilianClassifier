@@ -74,6 +74,7 @@ help: ## Показать справку
 	@echo "  $(MAKE) frontend-rebuild             Пересобрать React (frontend)"
 	@echo "  $(MAKE) backend-restart              Перезапустить Django (быстро)"
 	@echo "  $(MAKE) frontend-restart             Перезапустить React (быстро)"
+	@echo "  $(MAKE) restart                      Перезапустить backend + frontend (быстро)"
 	@echo "  $(MAKE) logs service=web             Логи сервиса"
 	@echo "  $(MAKE) clean                        Очистить контейнеры"
 	@echo ""
@@ -222,6 +223,10 @@ backend-rebuild: ## Пересобрать и перезапустить Django 
 backend-restart: ## Перезапустить Django (без пересборки, быстро)
 	@echo "$(GREEN)Перезапуск Backend (Django)...$(NC)"
 	$(DOCKER_COMPOSE) restart web
+
+restart: ## Перезапустить backend + frontend вместе (быстро)
+	@echo "$(GREEN)Перезапуск Backend и Frontend...$(NC)"
+	$(DOCKER_COMPOSE) restart web frontend
 
 web-rebuild: backend-rebuild ## Алиас для backend-rebuild
 
