@@ -194,7 +194,7 @@ class Trainer:
                     mlflow.log_metric("val_acc", val_acc, step=epoch)
                     mlflow.log_metric("best_acc", self.best_acc, step=epoch)
 
-                    # System metrics
+                    # System metrics (Sytem metrics и Traces)
                     mlflow.log_metric("system_cpu_percent", psutil.cpu_percent(), step=epoch)
                     mlflow.log_metric("system_memory_percent", psutil.virtual_memory().percent, step=epoch)
                     mlflow.log_metric("system_disk_percent", psutil.disk_usage('/').percent, step=epoch)
@@ -203,9 +203,13 @@ class Trainer:
                     if torch.cuda.is_available():
                         mlflow.log_metric("gpu_memory_allocated_mb", torch.cuda.memory_allocated() / 1024**2, step=epoch)
                         mlflow.log_metric("gpu_memory_reserved_mb", torch.cuda.memory_reserved() / 1024**2, step=epoch)
-                        for i in range(torch.cuda.device_count()):
-                            mlflow.log_metric(f"gpu_{i}_utilization", torch.cuda.utilization(i), step=epoch)
-                except Exception:
+
+                    # Log as params for Traces view
+                    mlflow.log_param("current_epoch", epoch)
+                    mlflow.log_param("gpu_available", torch.cuda.is_available())
+                    mlflow.log_param("device", str(self.device))
+
+                except Exception as e:
                     pass
 
             # CustomMLflow callback
