@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from django.http import JsonResponse
 import onnxruntime
 import numpy as np
 from PIL import Image
@@ -48,6 +49,91 @@ def get_mlflow_models():
     except Exception as e:
         print(f"Ошибка получения моделей из MLflow: {e}")
         return []
+
+
+def get_mlflow_runs_api(request):
+    """API: получить список RUN_ID из MLflow"""
+    from botocore.client import Config
+
+    try:
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=settings.AWS_S3_ENDPOINT_URL,
+            aws_access_key_id="minioadmin",
+            aws_secret_access_key="minioadmin",
+            config=Config(signature_version="s3v4"),
+        )
+
+        bucket = MLFLOW_BUCKET
+        response = s3.list_objects_v2(Bucket=bucket, Prefix="")
+
+        runs = {}
+        for obj in response["Contents"]:
+            key = obj["Key"]
+            if "/artifacts/" in key:
+                parts = key.split("/")
+                if len(parts) >= 2:
+                    exp_id = parts[0]
+                    if exp_id not in runs:
+                        runs[exp_id] = set()
+                    if len(parts) >= 3:
+                        runs[exp_id].add(parts[1])
+
+        result = []
+        for exp_id, run_ids in runs.items():
+            for run_id in sorted(run_ids):
+                result.append({"run_id": run_id, "experiment_id": exp_id})
+
+        return JsonResponse({"runs": result})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+def download_mlflow_model_api(request):
+    """API: скачать модель из MLflow и сохранить в Django"""
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=400)
+
+    run_id = request.POST.get("run_id")
+    if not run_id:
+        return JsonResponse({"error": "run_id required"}, status=400)
+
+    try:
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=settings.AWS_S3_ENDPOINT_URL,
+            aws_access_key_id="minioadmin",
+            aws_secret_access_key="minioadmin",
+        )
+
+        bucket = MLFLOW_BUCKET
+        prefix = f"1/{run_id}/artifacts/"
+
+        onnx_key = None
+        response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+        for obj in response.get("Contents", []):
+            key = obj["Key"]
+            if key.endswith(".onnx"):
+                onnx_key = key
+                break
+
+        if not onnx_key:
+            return JsonResponse({"error": "No ONNX model found"}, status=404)
+
+        model_name = os.path.basename(onnx_key)
+        local_path = f"/tmp/{model_name}"
+        s3.download_file(bucket, onnx_key, local_path)
+
+        storage = default_storage
+        model_key = f"media/models/{model_name}"
+        with open(local_path, "rb") as f:
+            storage.save(model_key, ContentFile(f.read()))
+
+        os.remove(local_path)
+
+        return JsonResponse({"success": True, "model": model_name})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 def download_model_from_mlflow(model_key, local_path):

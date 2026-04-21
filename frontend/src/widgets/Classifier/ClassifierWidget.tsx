@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Upload, Loader2, X } from 'lucide-react';
+import { Upload, Loader2, X, Database, Download } from 'lucide-react';
 import type { RootState } from '@/app/store/store';
 import type { AppDispatch } from '@/app/store/store';
 import './ClassifierWidget.css';
@@ -10,12 +10,21 @@ interface PredictionResult {
   image_url: string;
 }
 
+interface MlflowRun {
+  run_id: string;
+  experiment_id: string;
+}
+
 export function ClassifierWidget() {
   const dispatch = useDispatch<AppDispatch>();
   const { imageUrl, prediction, isLoading, error } = useSelector(
     (state: RootState) => state.classifier
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showMlflowModal, setShowMlflowModal] = useState(false);
+  const [mlflowRuns, setMlflowRuns] = useState<MlflowRun[]>([]);
+  const [loadingRuns, setLoadingRuns] = useState(false);
+  const [downloadingRun, setDownloadingRun] = useState<string | null>(null);
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,6 +69,42 @@ export function ClassifierWidget() {
     dispatch({ type: 'classifier/clearPrediction' });
   }, [dispatch]);
 
+  const openMlflowModal = useCallback(async () => {
+    setShowMlflowModal(true);
+    setLoadingRuns(true);
+    try {
+      const response = await fetch('/api/mlflow-runs');
+      const data = await response.json();
+      setMlflowRuns(data.runs || []);
+    } catch (err) {
+      console.error('Failed to load MLflow runs:', err);
+    } finally {
+      setLoadingRuns(false);
+    }
+  }, []);
+
+  const downloadRun = useCallback(async (runId: string) => {
+    setDownloadingRun(runId);
+    try {
+      const formData = new FormData();
+      formData.append('run_id', runId);
+      const response = await fetch('/api/mlflow-download', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert(`Модель ${data.model} загружена!`);
+      } else {
+        alert(`Ошибка: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Ошибка: ${err}`);
+    } finally {
+      setDownloadingRun(null);
+    }
+  }, []);
+
   const classLabels = ['Крокодил', 'Аллигатор', 'Кайман'];
 
   return (
@@ -85,9 +130,15 @@ export function ClassifierWidget() {
             <option value="resnet20">ResNet20</option>
           </select>
 
-          <a href="http://localhost:8000/uploadModel" className="manage-models-link">
-            Управление моделями →
-          </a>
+          <div className="model-actions">
+            <a href="http://localhost:8000/uploadModel" className="manage-models-link">
+              Управление моделями →
+            </a>
+            <button type="button" className="mlflow-btn" onClick={openMlflowModal}>
+              <Database size={16} />
+              Загрузить из MLflow
+            </button>
+          </div>
 
           <input
             type="submit"
@@ -137,6 +188,49 @@ export function ClassifierWidget() {
           </ul>
         </div>
       </div>
+
+      {showMlflowModal && (
+        <div className="modal-overlay" onClick={() => setShowMlflowModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Загрузка модели из MLflow</h3>
+              <button className="modal-close" onClick={() => setShowMlflowModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body">
+              {loadingRuns ? (
+                <div className="loading">
+                  <Loader2 className="spin" />
+                  <p>Загрузка списка моделей...</p>
+                </div>
+              ) : mlflowRuns.length === 0 ? (
+                <p>Нет доступных моделей</p>
+              ) : (
+                <div className="runs-list">
+                  {mlflowRuns.map(run => (
+                    <div key={run.run_id} className="run-item">
+                      <span className="run-id">{run.run_id}</span>
+                      <button
+                        className="download-btn"
+                        onClick={() => downloadRun(run.run_id)}
+                        disabled={downloadingRun === run.run_id}
+                      >
+                        {downloadingRun === run.run_id ? (
+                          <Loader2 className="spin" size={16} />
+                        ) : (
+                          <Download size={16} />
+                        )}
+                        Загрузить
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

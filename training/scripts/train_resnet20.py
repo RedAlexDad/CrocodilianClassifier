@@ -33,85 +33,88 @@ def train_resnet20(
     device = get_device()
     set_seed(seed)
 
-    # MLflow
-    mlflow = setup_mlflow()
-    log_params({
-        "model": "ResNet20",
-        "optimizer": optimizer_name,
-        "seed": seed,
-        "epochs_stage1": epochs_stage1 or config.EPOCHS_STAGE1,
-        "epochs_stage2": epochs or config.EPOCHS_STAGE2,
-        "lr_stage1": lr or config.LEARNING_RATE_STAGE1,
-        "lr_stage2": lr_finetune or config.LEARNING_RATE_STAGE2,
-        "finetune_layers": finetune_layers or config.FINETUNE_LAYERS,
-    })
+    # MLflow with named run
+    import mlflow
+    setup_mlflow()
+    run_name = f"ResNet20_{optimizer_name}"
 
-    if epochs is not None:
-        config.EPOCHS_STAGE2 = epochs
-    if epochs_stage1 is not None:
-        config.EPOCHS_STAGE1 = epochs_stage1
-    if finetune_layers is not None:
-        config.FINETUNE_LAYERS = finetune_layers
-    if lr is not None:
-        config.LEARNING_RATE_STAGE1 = lr
-    if lr_finetune is not None:
-        config.LEARNING_RATE_STAGE2 = lr_finetune
+    with mlflow.start_run(run_name=run_name):
+        log_params({
+            "model": "ResNet20",
+            "optimizer": optimizer_name,
+            "seed": seed,
+            "epochs_stage1": epochs_stage1 or config.EPOCHS_STAGE1,
+            "epochs_stage2": epochs or config.EPOCHS_STAGE2,
+            "lr_stage1": lr or config.LEARNING_RATE_STAGE1,
+            "lr_stage2": lr_finetune or config.LEARNING_RATE_STAGE2,
+            "finetune_layers": finetune_layers or config.FINETUNE_LAYERS,
+        })
 
-    train_X, train_y, test_X, test_y = load_data(
-        config.DATA_DIR, config.CLASSES, image_size=config.IMAGE_SIZE
-    )
+        if epochs is not None:
+            config.EPOCHS_STAGE2 = epochs
+        if epochs_stage1 is not None:
+            config.EPOCHS_STAGE1 = epochs_stage1
+        if finetune_layers is not None:
+            config.FINETUNE_LAYERS = finetune_layers
+        if lr is not None:
+            config.LEARNING_RATE_STAGE1 = lr
+        if lr_finetune is not None:
+            config.LEARNING_RATE_STAGE2 = lr_finetune
 
-    dataloader = create_dataloaders(train_X, train_y, test_X, test_y, config, model_type="resnet20")
+        train_X, train_y, test_X, test_y = load_data(
+            config.DATA_DIR, config.CLASSES, image_size=config.IMAGE_SIZE
+        )
 
-    model = ResNet20Model(num_classes=len(config.CLASSES), pretrained=config.PRETRAINED).to(device)
+        dataloader = create_dataloaders(train_X, train_y, test_X, test_y, config, model_type="resnet20")
 
-    print(f"\nАрхитектура ResNet20:")
-    print(model)
+        model = ResNet20Model(num_classes=len(config.CLASSES), pretrained=config.PRETRAINED).to(device)
 
-    criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+        print(f"\nАрхитектура ResNet20:")
+        print(model)
 
-    from .train_mlp import get_optimizer
+        criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
 
-    optimizer = get_optimizer(optimizer_name, model.parameters(), config.LEARNING_RATE_STAGE1)
+        from .train_mlp import get_optimizer
 
-    # ЭТАП 1: Обучение только классификатора
-    print("\nЭТАП 1: Обучение классификатора (база заморожена)")
-    model.freeze_base()
+        optimizer = get_optimizer(optimizer_name, model.parameters(), config.LEARNING_RATE_STAGE1)
 
-    def mlflow_callback(epoch, loss, acc):
-        import mlflow
-        mlflow.log_metric("val_loss", loss, step=epoch)
-        mlflow.log_metric("val_acc", acc, step=epoch)
+        # ЭТАП 1: Обучение только классификатора
+        print("\nЭТАП 1: Обучение классификатора (база заморожена)")
+        model.freeze_base()
 
-    trainer = Trainer(model, criterion, optimizer, device, mlflow_callback=mlflow_callback)
-    best_acc = trainer.train(dataloader, epochs=config.EPOCHS_STAGE1, model_name="ResNet20_stage1")
+        def mlflow_callback(epoch, loss, acc):
+            import mlflow
+            mlflow.log_metric("val_loss", loss, step=epoch)
+            mlflow.log_metric("val_acc", acc, step=epoch)
 
-    # ЭТАП 2: Fine-tuning
-    print("\nЭТАП 2: Fine-tuning")
-    model.unfreeze_last_n_layers(config.FINETUNE_LAYERS)
+        trainer = Trainer(model, criterion, optimizer, device, mlflow_callback=mlflow_callback)
+        best_acc = trainer.train(dataloader, epochs=config.EPOCHS_STAGE1, model_name="ResNet20_stage1")
 
-    optimizer_ft = get_optimizer(optimizer_name, model.parameters(), config.LEARNING_RATE_STAGE2)
+        # ЭТАП 2: Fine-tuning
+        print("\nЭТАП 2: Fine-tuning")
+        model.unfreeze_last_n_layers(config.FINETUNE_LAYERS)
 
-    trainer = Trainer(model, criterion, optimizer_ft, device)
-    best_acc = trainer.train(dataloader, epochs=config.EPOCHS_STAGE2, model_name="ResNet20_stage2")
+        optimizer_ft = get_optimizer(optimizer_name, model.parameters(), config.LEARNING_RATE_STAGE2)
 
-    _, _, y_true, y_pred = validate(model, dataloader["test"], criterion, device)
-    print_classification_report(y_true, y_pred, config.CLASSES, "Test")
+        trainer = Trainer(model, criterion, optimizer_ft, device)
+        best_acc = trainer.train(dataloader, epochs=config.EPOCHS_STAGE2, model_name="ResNet20_stage2")
 
-    export_to_onnx(
-        model,
-        config.MODEL_NAME,
-        config.ONNX_PATH,
-        (3, config.IMAGE_SIZE, config.IMAGE_SIZE),
-        device,
-    )
+        _, _, y_true, y_pred = validate(model, dataloader["test"], criterion, device)
+        print_classification_report(y_true, y_pred, config.CLASSES, "Test")
 
-    trainer.log_final_artifacts(
-        dataloader, criterion, device,
-        class_names=config.CLASSES,
-        checkpoint_path=config.CHECKPOINT,
-        onnx_path=config.ONNX_PATH
-    )
+        export_to_onnx(
+            model,
+            config.MODEL_NAME,
+            config.ONNX_PATH,
+            (3, config.IMAGE_SIZE, config.IMAGE_SIZE),
+            device,
+        )
 
-    print(f"\nИтоговая точность ResNet20 ({optimizer_name.upper()}): {best_acc:.2f}%")
-    return best_acc
+        trainer.log_final_artifacts(
+            dataloader, criterion, device,
+            class_names=config.CLASSES,
+            checkpoint_path=config.CHECKPOINT,
+            onnx_path=config.ONNX_PATH
+        )
+
+        print(f"\nИтоговая точность ResNet20 ({optimizer_name.upper()}): {best_acc:.2f}%")

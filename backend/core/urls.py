@@ -14,6 +14,8 @@ urlpatterns = [
     path("predictImage", views.predictImage, name="predictImage"),
     path("uploadModel", views.uploadModel, name="uploadModel"),
     path("mlflowModels", views.uploadModelFromMLflow, name="uploadModelFromMLflow"),
+    path("api/mlflow-runs", views.get_mlflow_runs_api, name="mlflow_runs_api"),
+    path("api/mlflow-download", views.download_mlflow_model_api, name="mlflow_download_api"),
 ]
 
 # Отдавать медиа файлы через S3 не нужно - они уже доступны по прямому URL

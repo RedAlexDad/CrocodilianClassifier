@@ -17,8 +17,19 @@ S3_ENDPOINT = os.environ.get("MLFLOW_S3_ENDPOINT_URL", "http://localhost:9000")
 
 def setup_mlflow(experiment_name=None, tracking_uri=None):
     """Настроить MLflow с S3 артефактами"""
+    import urllib.request
+
     uri = tracking_uri or MLFLOW_TRACKING_URI
     experiment = experiment_name or MLFLOW_EXPERIMENT_NAME
+
+    # Check if tracking server is available, fallback to local
+    try:
+        urllib.request.urlopen(uri, timeout=2)
+    except Exception:
+        # Fallback to local storage
+        local_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "mlruns")
+        uri = local_path
+        print(f"MLflow tracking server unavailable, using local storage: {local_path}")
 
     mlflow.set_tracking_uri(uri)
     mlflow.set_experiment(experiment)
@@ -27,15 +38,14 @@ def setup_mlflow(experiment_name=None, tracking_uri=None):
     os.environ["AWS_ACCESS_KEY_ID"] = "minioadmin"
     os.environ["AWS_SECRET_ACCESS_KEY"] = "minioadmin"
 
-    # Enable autolog for system metrics
+    # Enable autolog
     try:
         mlflow.autolog(
             log_models=False,
-            log_durations=True,
             silent=True,
         )
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"MLflow autolog: {e}")
 
     return mlflow
 
