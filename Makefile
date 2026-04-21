@@ -48,6 +48,7 @@ LR_FINETUNE ?= 0.0001
 BATCH_SIZE ?= 32
 WEIGHT_DECAY ?= 0.0001
 SEED ?= 42
+DEVICE ?= cuda
 
 # ==============================================================================
 # Основное
@@ -106,8 +107,8 @@ help: ## Показать справку
 # Обучение моделей
 # ==============================================================================
 
-train: ## Обучить: make train MODEL=cnn OPTIMIZER=adam EPOCHS=50 LR=0.001
-	@echo "$(GREEN)Обучение: MODEL=$(MODEL), OPTIMIZER=$(OPTIMIZER), EPOCHS=$(EPOCHS)$(NC)"
+train: ## Обучить: make train MODEL=cnn OPTIMIZER=adam EPOCHS=50 LR=0.001 DEVICE=cpu
+	@echo "$(GREEN)Обучение: MODEL=$(MODEL), OPTIMIZER=$(OPTIMIZER), EPOCHS=$(EPOCHS), DEVICE=$(DEVICE)$(NC)"
 	cd $(TRAINING_DIR) && $(PYTHON) main.py \
 		--model $(MODEL) \
 		--optimizer $(OPTIMIZER) \
@@ -118,7 +119,8 @@ train: ## Обучить: make train MODEL=cnn OPTIMIZER=adam EPOCHS=50 LR=0.001
 		--lr-finetune $(LR_FINETUNE) \
 		--batch-size $(BATCH_SIZE) \
 		--weight-decay $(WEIGHT_DECAY) \
-		--seed $(SEED)
+		--seed $(SEED) \
+		--device $(DEVICE)
 
 train-all: ## Обучить все модели
 	@echo "$(GREEN)Обучение всех моделей...$(NC)"

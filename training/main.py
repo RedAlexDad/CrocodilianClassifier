@@ -54,6 +54,9 @@ def main():
     parser.add_argument(
         "--weight-decay", type=float, default=1e-4, help="Weight decay (L2 regularization)"
     )
+    parser.add_argument(
+        "--device", type=str, default="cuda", choices=["cuda", "cpu"], help="Устройство (cuda/cpu)"
+    )
 
     args = parser.parse_args()
 
@@ -77,7 +80,7 @@ def main():
             print(f"\n=== Сравнение оптимизаторов для {model_type.upper()} ===")
 
             for opt in optimizers:
-                kwargs = {"model_name": model_type, "optimizer_name": opt, "seed": args.seed, "epochs": args.epochs}
+                kwargs = {"model_name": model_type, "optimizer_name": opt, "seed": args.seed, "epochs": args.epochs, "device": args.device}
                 if model_type in ("resnet20", "mobilenet"):
                     kwargs.update(
                         {
@@ -91,7 +94,7 @@ def main():
                 results.append({"name": model_type.upper(), "optimizer": opt, "acc": acc})
         else:
             optimizer = args.optimizer or get_default_optimizer(model_type)
-            kwargs = {"model_name": model_type, "optimizer_name": optimizer, "seed": args.seed, "epochs": args.epochs}
+            kwargs = {"model_name": model_type, "optimizer_name": optimizer, "seed": args.seed, "epochs": args.epochs, "device": args.device}
 
             if model_type in ("resnet20", "mobilenet"):
                 kwargs.update(

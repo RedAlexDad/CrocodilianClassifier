@@ -47,6 +47,7 @@ def train_model(
     epochs_stage1: Optional[int] = None,
     finetune_layers: Optional[int] = None,
     lr_finetune: Optional[float] = None,
+    device: str = "cuda",
 ):
     """Обучение модели"""
     model_name = model_name.lower()
@@ -60,7 +61,7 @@ def train_model(
     model_cfg = MODEL_CONFIGS[model_name]
     config = model_cfg["config"]()
     config.setup_dirs()
-    device = get_device()
+    device = torch.device(device)
     set_seed(seed)
 
     import mlflow
