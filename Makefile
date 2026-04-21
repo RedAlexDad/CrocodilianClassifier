@@ -36,6 +36,20 @@ NC     := $(shell tput sgr0 2>/dev/null || echo "")
 .PHONY: help
 
 # ==============================================================================
+# Параметры обучения (можно переопределить через переменные)
+# ==============================================================================
+MODEL ?= cnn
+OPTIMIZER ?= adam
+EPOCHS ?= 50
+EPOCHS_STAGE1 ?= 50
+FINETUNE_LAYERS ?= 20
+LR ?= 0.001
+LR_FINETUNE ?= 0.0001
+BATCH_SIZE ?= 32
+WEIGHT_DECAY ?= 0.0001
+SEED ?= 42
+
+# ==============================================================================
 # Основное
 # ==============================================================================
 
@@ -43,11 +57,27 @@ help: ## Показать справку
 	@echo ""
 	@echo "$(BLUE)Крокодилы - Классификатор ДЗ1$(NC)"
 	@echo ""
-	@echo "$(GREEN)Обучение:$(NC)"
-	@echo "  $(MAKE) train-cnn         Обучить CNN"
-	@echo "  $(MAKE) train-mlp         Обучить MLP"
-	@echo "  $(MAKE) train-resnet20  Обучить ResNet20"
-	@echo "  $(MAKE) train-all       Обучить все модели"
+	@echo "$(GREEN)Обучение (просто):$(NC)"
+	@echo "  $(MAKE) train-cnn           Обучить CNN"
+	@echo "  $(MAKE) train-mlp           Обучить MLP"
+	@echo "  $(MAKE) train-resnet20      Обучить ResNet20"
+	@echo "  $(MAKE) train-all          Обучить все модели"
+	@echo ""
+	@echo "$(GREEN)Обучение с параметрами:$(NC)"
+	@echo "  $(MAKE) train MODEL=cnn OPTIMIZER=sgd EPOCHS=100 LR=0.01"
+	@echo ""
+	@echo "$(GREEN)Docker:$(NC)"
+	@echo "  $(MAKE) full-up             Запустить все сервисы"
+	@echo "  $(MAKE) build               Собрать Docker"
+	@echo "  $(MAKE) logs service=mlflow Логи сервиса"
+	@echo ""
+	@echo "$(GREEN)MLflow:$(NC)"
+	@echo "  $(MAKE) mlflow-up          Запустить MLflow"
+	@echo "  $(MAKE) mlflow-logs         Логи MLflow"
+	@echo ""
+	@echo "$(GREEN)MinIO:$(NC)"
+	@echo "  $(MAKE) minio-up           Запустить MinIO"
+	@echo "  $(MAKE) minio-console       MinIO Console"
 	@echo ""
 	@echo "$(GREEN)Docker:$(NC)"
 	@echo "  $(MAKE) full-up                       Запустить все сервисы"
@@ -76,9 +106,19 @@ help: ## Показать справку
 # Обучение моделей
 # ==============================================================================
 
-train: ## Обучить модель: make train model=cnn optimizer=adam epochs=100
-	@echo "$(GREEN)Обучение модели: $(model)$(NC)"
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --model $(model) $(OPT)
+train: ## Обучить: make train MODEL=cnn OPTIMIZER=adam EPOCHS=50 LR=0.001
+	@echo "$(GREEN)Обучение: MODEL=$(MODEL), OPTIMIZER=$(OPTIMIZER), EPOCHS=$(EPOCHS)$(NC)"
+	cd $(TRAINING_DIR) && $(PYTHON) main.py \
+		--model $(MODEL) \
+		--optimizer $(OPTIMIZER) \
+		--epochs $(EPOCHS) \
+		--epochs-stage1 $(EPOCHS_STAGE1) \
+		--finetune-layers $(FINETUNE_LAYERS) \
+		--lr $(LR) \
+		--lr-finetune $(LR_FINETUNE) \
+		--batch-size $(BATCH_SIZE) \
+		--weight-decay $(WEIGHT_DECAY) \
+		--seed $(SEED)
 
 train-all: ## Обучить все модели
 	@echo "$(GREEN)Обучение всех моделей...$(NC)"
@@ -88,20 +128,20 @@ train-compared: ## Сравнить все оптимизаторы
 	cd $(TRAINING_DIR) && $(PYTHON) main.py --model all --compare-optimizers
 
 # ==============================================================================
-# Shortcut команды для обучения
+# Shortcut команды для обучения (используют переменные above)
 # ==============================================================================
 
 train-mlp: ## make train-mlp
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --model mlp
+	$(MAKE) train MODEL=mlp
 
 train-cnn: ## make train-cnn
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --model cnn
+	$(MAKE) train MODEL=cnn OPTIMIZER=sgd
 
 train-resnet20: ## make train-resnet20
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --model resnet20
+	$(MAKE) train MODEL=resnet20
 
 train-mobilenet: ## make train-mobilenet
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --model mobilenet
+	$(MAKE) train MODEL=mobilenet
 	cd $(TRAINING_DIR) && $(PYTHON) main.py --model all
 
 train-compared: ## Сравнить все оптимизаторы
