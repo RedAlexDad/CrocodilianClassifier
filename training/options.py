@@ -73,6 +73,14 @@ def get_model_description(model_type: str) -> str:
     return config["description"]
 
 
+def get_model_trainer(model_type: str):
+    """Получить функцию обучения для модели"""
+    config = get_model_config(model_type)
+    if config is None:
+        raise ValueError(f"Неизвестная модель: {model_type}")
+    return config["trainer"]
+
+
 def print_summary(results):
     """Вывод сводки по обучению"""
     print("\n" + "=" * 60)
