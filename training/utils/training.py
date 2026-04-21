@@ -333,14 +333,9 @@ class Trainer:
             if checkpoint_path and os.path.exists(checkpoint_path):
                 mlflow.log_artifact(checkpoint_path)
 
-            # Save ONNX model - in onnx/ subfolder like yolo example
+            # Save ONNX model - only the current model
             if onnx_path and os.path.exists(onnx_path):
-                import shutil
-                import os as os_module
-                onnx_dir = "/tmp/onnx"
-                os_module.makedirs(onnx_dir, exist_ok=True)
-                shutil.copy(onnx_path, os.path.join(onnx_dir, os.path.basename(onnx_path)))
-                mlflow.log_artifacts(onnx_dir, artifact_path="onnx")
+                mlflow.log_artifact(onnx_path)
 
             # Log final metrics
             mlflow.log_metric("final_val_accuracy", self.best_acc)

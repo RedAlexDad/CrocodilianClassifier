@@ -44,7 +44,7 @@ def export_to_onnx(model, model_name, onnx_path, input_shape, device):
         dummy_input,
         temp_path,
         export_params=True,
-        opset_version=11,
+        opset_version=18,
         do_constant_folding=True,
         input_names=["input"],
         output_names=["output"],
