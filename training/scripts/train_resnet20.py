@@ -7,14 +7,10 @@ import torch.nn as nn
 from configs import ResNetConfig
 from models import ResNet20Model
 from utils import (
-    load_data,
-    create_dataloaders,
-    Trainer,
-    export_to_onnx,
-    get_device,
-    set_seed,
-    validate,
-    print_classification_report,
+    setup_mlflow, log_params,
+    load_data, create_dataloaders, Trainer,
+    export_to_onnx, get_device, set_seed, validate,
+    print_classification_report
 )
 
 
@@ -36,6 +32,19 @@ def train_resnet20(
     config.setup_dirs()
     device = get_device()
     set_seed(seed)
+
+    # MLflow
+    mlflow = setup_mlflow()
+    log_params({
+        "model": "ResNet20",
+        "optimizer": optimizer_name,
+        "seed": seed,
+        "epochs_stage1": epochs_stage1 or config.EPOCHS_STAGE1,
+        "epochs_stage2": epochs or config.EPOCHS_STAGE2,
+        "lr_stage1": lr or config.LEARNING_RATE_STAGE1,
+        "lr_stage2": lr_finetune or config.LEARNING_RATE_STAGE2,
+        "finetune_layers": finetune_layers or config.FINETUNE_LAYERS,
+    })
 
     if epochs is not None:
         config.EPOCHS_STAGE2 = epochs
@@ -69,7 +78,12 @@ def train_resnet20(
     print("\nЭТАП 1: Обучение классификатора (база заморожена)")
     model.freeze_base()
 
-    trainer = Trainer(model, criterion, optimizer, device)
+    def mlflow_callback(epoch, loss, acc):
+        import mlflow
+        mlflow.log_metric("val_loss", loss, step=epoch)
+        mlflow.log_metric("val_acc", acc, step=epoch)
+
+    trainer = Trainer(model, criterion, optimizer, device, mlflow_callback=mlflow_callback)
     best_acc = trainer.train(dataloader, epochs=config.EPOCHS_STAGE1, model_name="ResNet20_stage1")
 
     # ЭТАП 2: Fine-tuning

@@ -2,7 +2,9 @@
 Константы и настройки для обучения моделей
 """
 
-from scripts import train_mlp, train_cnn, train_resnet20, train_mobilenet
+from typing import Any, Callable, Dict, List, Optional
+
+from scripts import train_cnn, train_mlp, train_mobilenet, train_resnet20
 
 OPTIMIZERS = ["adam", "adagrad", "rmsprop", "sgd"]
 OPTIMIZERS_MLP = ["adam", "adagrad", "rmsprop"]
@@ -44,7 +46,7 @@ DEFAULT_OPTIMIZER = "adam"
 DEFAULT_MODEL = "all"
 
 
-def get_model_config(model_type: str) -> dict | None:
+def get_model_config(model_type: str) -> Optional[Dict[str, Any]]:
     """Получить конфигурацию модели"""
     return MODEL_CONFIGS.get(model_type)
 
@@ -57,7 +59,7 @@ def get_default_optimizer(model_type: str) -> str:
     return config["default_optimizer"]
 
 
-def get_available_optimizers(model_type: str) -> list:
+def get_available_optimizers(model_type: str) -> List[str]:
     """Получить доступные оптимизаторы для модели"""
     config = get_model_config(model_type)
     if config is None:
@@ -73,7 +75,7 @@ def get_model_description(model_type: str) -> str:
     return config["description"]
 
 
-def get_model_trainer(model_type: str) -> callable:
+def get_model_trainer(model_type: str) -> Callable:
     """Получить функцию обучения для модели"""
     config = get_model_config(model_type)
     if config is None:
@@ -81,7 +83,7 @@ def get_model_trainer(model_type: str) -> callable:
     return config["trainer"]
 
 
-def print_summary(results):
+def print_summary(results: List[Dict[str, Any]]) -> None:
     """Вывод сводки по обучению"""
     print("\n" + "=" * 60)
     print("ИТОГОВЫЕ РЕЗУЛЬТАТЫ")

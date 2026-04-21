@@ -8,6 +8,8 @@ import torch.optim as optim
 from configs import MLPConfig
 from models import MLPModel
 from utils import (
+    setup_mlflow,
+    log_params,
     load_data,
     create_dataloaders,
     Trainer,
@@ -45,6 +47,18 @@ def train_mlp(optimizer_name="adam", seed=42, epochs=None, lr=None):
     device = get_device()
     set_seed(seed)
 
+    # MLflow
+    mlflow = setup_mlflow()
+    log_params({
+        "model": "MLP",
+        "optimizer": optimizer_name,
+        "seed": seed,
+        "epochs": epochs or config.EPOCHS,
+        "lr": lr or config.LEARNING_RATE,
+        "input_size": config.INPUT_SIZE,
+        "hidden_layers": config.HIDDEN_LAYERS,
+    })
+
     if epochs is not None:
         config.EPOCHS = epochs
     if lr is not None:
@@ -73,8 +87,13 @@ def train_mlp(optimizer_name="adam", seed=42, epochs=None, lr=None):
     else:
         raise ValueError(f"Неизвестный оптимизатор: {optimizer_name}")
 
-    trainer = Trainer(model, dataloader, criterion, optimizer, device)
-    best_acc = trainer.train(config.EPOCHS)
+    def mlflow_log_callback(epoch, loss, acc):
+        import mlflow
+        mlflow.log_metric("val_loss", loss, step=epoch)
+        mlflow.log_metric("val_acc", acc, step=epoch)
+
+    trainer = Trainer(model, dataloader, criterion, optimizer, device, mlflow_callback=mlflow_log_callback)
+    best_acc = trainer.train(config.EPOCHS, log_every=1)
 
     _, _, y_true, y_pred = validate(model, dataloader["test"], criterion, device)
     print_classification_report(y_true, y_pred, config.CLASSES, "Test")

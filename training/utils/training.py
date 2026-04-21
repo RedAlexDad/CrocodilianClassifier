@@ -114,10 +114,12 @@ class Trainer:
     Класс для обучения модели с поддержкой:
         - Сохранения лучшей модели
         - Логирования метрик
+        - MLflow integration в реальном времени
         - Двухэтапного обучения (для transfer learning)
     """
 
-    def __init__(self, model, criterion, optimizer, device, checkpoint_path=None, scheduler=None):
+    def __init__(self, model, criterion, optimizer, device, checkpoint_path=None, scheduler=None,
+                 mlflow_callback=None):
         self.model = model
         self.criterion = criterion
         self.optimizer = optimizer
@@ -127,6 +129,7 @@ class Trainer:
         self.best_acc = 0.0
         self.best_state = None
         self.history = {"train_loss": [], "train_acc": [], "val_loss": [], "val_acc": []}
+        self.mlflow_callback = mlflow_callback
 
     def train(self, dataloader, epochs, model_name="Model", log_every=10):
         """
@@ -138,6 +141,14 @@ class Trainer:
             model_name: Название модели для логов
             log_every: Частота логирования
         """
+        # Попытка импортировать MLflow
+        mlflow_available = False
+        try:
+            import mlflow
+            mlflow_available = True
+        except ImportError:
+            pass
+
         pbar = tqdm(total=epochs, desc=f"Обучение {model_name}")
 
         for epoch in range(epochs):
@@ -170,6 +181,25 @@ class Trainer:
                     torch.save(self.best_state, self.checkpoint_path)
 
             pbar.update(1)
+
+            # MLflow логирование в реальном времени
+            if mlflow_available and (epoch + 1) % log_every == 0 or epoch == 0:
+                try:
+                    import mlflow
+                    mlflow.log_metric("train_loss", train_loss, step=epoch)
+                    mlflow.log_metric("train_acc", train_acc, step=epoch)
+                    mlflow.log_metric("val_loss", val_loss, step=epoch)
+                    mlflow.log_metric("val_acc", val_acc, step=epoch)
+                    mlflow.log_metric("best_acc", self.best_acc, step=epoch)
+                except Exception:
+                    pass
+
+            # CustomMLflow callback
+            if self.mlflow_callback is not None:
+                try:
+                    self.mlflow_callback(epoch + 1, val_loss, val_acc)
+                except Exception:
+                    pass
 
             if (epoch + 1) % log_every == 0 or epoch == 0:
                 print(f"\n{model_name} | Epoch {epoch+1}/{epochs}")

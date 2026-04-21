@@ -7,6 +7,10 @@ import torch.nn as nn
 from configs import CNNConfig
 from models import CNNModel
 from utils import (
+    setup_mlflow,
+    log_params,
+    log_metrics,
+    log_sample_images,
     load_data,
     create_dataloaders,
     Trainer,
@@ -15,9 +19,6 @@ from utils import (
     set_seed,
     validate,
     print_classification_report,
-    setup_mlflow,
-    log_metrics,
-    log_params,
 )
 
 
@@ -32,7 +33,7 @@ def train_cnn(optimizer_name="sgd", seed=42, epochs=None, lr=None):
     device = get_device()
     set_seed(seed)
 
-    # MLflow
+    # MLflow setup
     mlflow = setup_mlflow()
     log_params({
         "model": "CNN",
@@ -41,6 +42,8 @@ def train_cnn(optimizer_name="sgd", seed=42, epochs=None, lr=None):
         "epochs": epochs or config.EPOCHS,
         "lr": lr or config.LEARNING_RATE,
         "batch_size": config.BATCH_SIZE,
+        "dropout": config.DROPOUT,
+        "image_size": config.IMAGE_SIZE,
     })
 
     if epochs is not None:
@@ -74,17 +77,21 @@ def train_cnn(optimizer_name="sgd", seed=42, epochs=None, lr=None):
     print(f"Learning rate: {config.LEARNING_RATE}")
     print(f"Эпох: {config.EPOCHS}")
 
+    def mlflow_log_callback(epoch, loss, acc):
+        """Callback для MLflow логирования"""
+        import mlflow
+        mlflow.log_metric("val_loss", loss, step=epoch)
+        mlflow.log_metric("val_acc", acc, step=epoch)
+
     trainer = Trainer(
-        model, criterion, optimizer, device, checkpoint_path=config.CHECKPOINT, scheduler=scheduler
+        model, criterion, optimizer, device,
+        checkpoint_path=config.CHECKPOINT, scheduler=scheduler,
+        mlflow_callback=mlflow_log_callback
     )
 
     best_acc = trainer.train(
-        dataloader, epochs=config.EPOCHS, model_name=config.MODEL_NAME, log_every=50
+        dataloader, epochs=config.EPOCHS, model_name=config.MODEL_NAME, log_every=1
     )
-
-    # MLflow логирование
-    if best_acc:
-        log_metrics(0, trainer.history["train_loss"][-1], best_acc)
 
     _, _, y_true, y_pred = validate(model, dataloader["test"], criterion, device)
     print_classification_report(y_true, y_pred, config.CLASSES, "Test")
