@@ -112,5 +112,12 @@ def train_mobilenet(
         device,
     )
 
+    trainer.log_final_artifacts(
+        dataloader, criterion, device,
+        class_names=config.CLASSES,
+        checkpoint_path=config.CHECKPOINT,
+        onnx_path=config.ONNX_PATH
+    )
+
     print(f"\nИтоговая точность MobileNetV2 ({optimizer_name.upper()}): {best_acc:.2f}%")
     return best_acc

@@ -92,13 +92,24 @@ def train_mlp(optimizer_name="adam", seed=42, epochs=None, lr=None):
         mlflow.log_metric("val_loss", loss, step=epoch)
         mlflow.log_metric("val_acc", acc, step=epoch)
 
-    trainer = Trainer(model, dataloader, criterion, optimizer, device, mlflow_callback=mlflow_log_callback)
-    best_acc = trainer.train(config.EPOCHS, log_every=1)
+    trainer = Trainer(
+        model, criterion, optimizer, device,
+        checkpoint_path=config.CHECKPOINT,
+        mlflow_callback=mlflow_log_callback
+    )
+    best_acc = trainer.train(dataloader, epochs=config.EPOCHS, model_name=config.MODEL_NAME, log_every=1)
 
     _, _, y_true, y_pred = validate(model, dataloader["test"], criterion, device)
     print_classification_report(y_true, y_pred, config.CLASSES, "Test")
 
     export_to_onnx(model, config.MODEL_NAME, config.ONNX_PATH, (3, 32, 32), device)
+
+    trainer.log_final_artifacts(
+        dataloader, criterion, device,
+        class_names=config.CLASSES,
+        checkpoint_path=config.CHECKPOINT,
+        onnx_path=config.ONNX_PATH
+    )
 
     print(f"\nИтоговая точность MLP ({optimizer_name.upper()}): {best_acc:.2f}%")
     return best_acc
