@@ -363,8 +363,9 @@ class Trainer:
                     predictions=preds,
                     probabilities=probs,
                 )
-            except Exception:
-                pass
+                print("  Логирование sample_images в MLflow")
+            except Exception as e:
+                print(f"  Ошибка sample_images: {e}")
 
             # Log final metrics
             mlflow.log_metric("final_val_accuracy", self.best_acc)
@@ -372,7 +373,7 @@ class Trainer:
             mlflow.log_metric("final_val_loss", self.history["val_loss"][-1] if self.history["val_loss"] else 0)
 
         except Exception as e:
-            pass
+            print(f"  Ошибка log_final_artifacts: {e}")
 
     def train_two_stage(
         self,
