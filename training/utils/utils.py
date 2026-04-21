@@ -1,6 +1,7 @@
 """
 Утилиты для работы с данными и обучения
 """
+
 import torch
 import numpy as np
 import random
@@ -8,7 +9,7 @@ import random
 
 def get_device():
     """Получить устройство (CUDA/CPU)"""
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
     if torch.cuda.is_available():
         print(f"GPU: {torch.cuda.get_device_name(0)}")
