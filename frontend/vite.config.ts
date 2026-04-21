@@ -24,6 +24,14 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
+      '/uploadModel': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/mlflowModels': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
     },
   },
 });

@@ -89,6 +89,12 @@ def get_mlflow_runs_api(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 
+def get_models_api(request):
+    """API: получить список доступных моделей"""
+    models = get_available_models()
+    return JsonResponse({"models": models})
+
+
 def download_mlflow_model_api(request):
     """API: скачать модель из MLflow и сохранить в Django"""
     if request.method != "POST":

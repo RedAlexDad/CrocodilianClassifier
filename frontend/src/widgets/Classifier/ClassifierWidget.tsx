@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Upload, Loader2, X, Database, Download } from 'lucide-react';
 import type { RootState } from '@/app/store/store';
@@ -21,10 +21,25 @@ export function ClassifierWidget() {
     (state: RootState) => state.classifier
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [availableModels, setAvailableModels] = useState<string[]>(['CNN Model', 'MLP Model', 'ResNet20']);
   const [showMlflowModal, setShowMlflowModal] = useState(false);
   const [mlflowRuns, setMlflowRuns] = useState<MlflowRun[]>([]);
   const [loadingRuns, setLoadingRuns] = useState(false);
   const [downloadingRun, setDownloadingRun] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/models')
+      .then(res => res.json())
+      .then(data => {
+        if (data.models) {
+          const names = data.models.map((m: string | {name: string}) => 
+            typeof m === 'string' ? m : m.name
+          );
+          setAvailableModels(names.length ? names : ['CNN Model', 'MLP Model', 'ResNet20']);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,15 +140,12 @@ export function ClassifierWidget() {
             Выберите модель:
           </label>
           <select name="modelName">
-            <option value="cnn">CNN Model</option>
-            <option value="mlp">MLP Model</option>
-            <option value="resnet20">ResNet20</option>
+            {availableModels.map(name => (
+              <option key={name} value={name}>{name}</option>
+            ))}
           </select>
 
           <div className="model-actions">
-            <a href="http://localhost:8000/uploadModel" className="manage-models-link">
-              Управление моделями →
-            </a>
             <button type="button" className="mlflow-btn" onClick={openMlflowModal}>
               <Database size={16} />
               Загрузить из MLflow
