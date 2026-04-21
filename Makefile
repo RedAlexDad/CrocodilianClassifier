@@ -7,13 +7,16 @@
 PYTHON ?= python3
 PIP ?= pip3
 MANAGE := django-webapp/web-site-dl/manage.py
-DOCKER_COMPOSE := docker compose -f $(DJANGO_DIR)/docker-compose.yml
+DOCKER_COMPOSE := docker compose -f docker-compose.yml
 DOCKER := docker
 
 # Директории
 TRAINING_DIR := training
 DATA_DIR := data
 DJANGO_DIR := django-webapp
+
+# Docker compose файл
+DOCKER_COMPOSE_FILE := $(DJANGO_DIR)/docker-compose.yml
 
 # Классы датасета
 CLASSES ?= крокодил аллигатор кайман

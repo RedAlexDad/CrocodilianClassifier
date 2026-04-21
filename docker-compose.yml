@@ -2,7 +2,7 @@ services:
   # Django веб-приложение
   web:
     build:
-      context: .
+      context: ./django-webapp
       dockerfile: Dockerfile
     volumes:
       - .:/app
