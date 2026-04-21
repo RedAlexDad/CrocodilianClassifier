@@ -12,7 +12,7 @@ CrocodilianClassifier/
 │   ├── models/        # Архитектуры моделей (mlp.py, cnn.py, mobilenet.py)
 │   ├── scripts/      # Скрипты обучения
 │   └── utils/        # Утилиты: data.py, training.py, export.py, utils.py
-├── django-webapp/      # Django web-приложение
+├── backend/      # Django web-приложение
 ├── task/              # Инструкции к домашнему заданию
 └── report/            # Отчеты (PDF, DOCX)
 ```
@@ -20,7 +20,7 @@ CrocodilianClassifier/
 ## Классы датасета
 
 - `крокодил` - крокодилы
-- `аллигатор` - аллигаторы  
+- `аллигатор` - аллигаторы
 - `кайман` - кайманы
 
 Требование: не менее 100 изображений на класс.
@@ -39,12 +39,13 @@ python training/main.py --model cnn --optimizer sgd
 python training/main.py --model resnet20 --optimizer adam
 
 # Запуск Django
-cd django-webapp && python manage.py runserver
+cd backend && python manage.py runserver
 ```
 
 ## Конфигурации моделей
 
 ### MLP
+
 - INPUT_SIZE: 32x32x3 = 3072
 - Скрытые слои: [512, 256, 128]
 - Dropout: 0.3
@@ -52,6 +53,7 @@ cd django-webapp && python manage.py runserver
 - Эпохи: 100
 
 ### CNN (своя)
+
 - IMAGE_SIZE: 32
 - HIDDEN_SIZE: 32
 - Dropout: 0.3
@@ -61,6 +63,7 @@ cd django-webapp && python manage.py runserver
 - Оптимизаторы: sgd, adam, rmsprop
 
 ### ResNet20 (transfer learning)
+
 - IMAGE_SIZE: 224 (ImageNet стандарт)
 - Предобученная: True
 - Этап 1: только классификатор (50 эпох, LR=0.001)
@@ -70,6 +73,7 @@ cd django-webapp && python manage.py runserver
 ## Правила коммитов
 
 Только на русском языке, формат:
+
 - `type: описание` (type: chore, docs, feat, fix, refactor, style, test)
 - до 50 символов, повелительное наклонение, без точки
 
@@ -82,7 +86,8 @@ cd django-webapp && python manage.py runserver
 
 ## Зависимости
 
-См. `django-webapp/requirements.txt`:
+См. `backend/requirements.txt`:
+
 - Django>=4.2
 - Pillow>=10.0.0
 - onnx, onnxruntime
@@ -96,6 +101,7 @@ cd django-webapp && python manage.py runserver
 см. `task/homework1.md`
 
 Требования:
+
 1. Датасет 3 близких класса, 100+ изображений на класс
 2. Аугментация данных
 3. Регуляризация (dropout, weight decay)

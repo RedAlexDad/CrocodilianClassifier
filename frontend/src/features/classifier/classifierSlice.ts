@@ -1,5 +1,5 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
 
 export interface PredictionResult {
   scorePrediction: string;
@@ -27,8 +27,12 @@ const initialState: ClassifierState = {
 export const classifyImage = createAsyncThunk(
   'classifier/classify',
   async (formData: FormData) => {
-    const response = await axios.post('/predictImage', formData);
-    return response.data;
+    const response = await fetch('/predictImage', {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await response.json();
+    return data;
   }
 );
 

@@ -13,7 +13,7 @@ DOCKER_COMPOSE := $(DOCKER) compose -f docker-compose.yml
 # Директории
 TRAINING_DIR := training
 DATA_DIR := data
-DJANGO_DIR := django-webapp
+DJANGO_DIR := backend
 
 # Классы датасета
 CLASSES ?= крокодил аллигатор кайман
