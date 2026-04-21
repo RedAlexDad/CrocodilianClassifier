@@ -373,6 +373,43 @@ format: ##  Форматировать код
 	black dz1/
 
 # ==============================================================================
+# MLflow команды
+# ==============================================================================
+
+mlflow-up: ##  Запустить MLflow сервер
+	@echo "$(GREEN)Запуск MLflow...$(NC)"
+	$(DOCKER_COMPOSE) up -d mlflow
+	@sleep 3
+	@echo "$(GREEN)MLflow запущен!$(NC)"
+	@echo "$(YELLOW)MLflow UI: http://localhost:5000$(NC)"
+
+mlflow-logs: ##  Показать логи MLflow
+	@echo "$(GREEN)Логи MLflow:$(NC)"
+	$(DOCKER_COMPOSE) logs -f mlflow
+
+mlflow-stop: ##  Остановить MLflow
+	@echo "$(GREEN)Остановка MLflow...$(NC)"
+	$(DOCKER_COMPOSE) stop mlflow
+
+# ==============================================================================
+# Полный запуск (Django + MinIO + MLflow)
+# ==============================================================================
+
+full-up: ##  Запустить все сервисы (Django + MinIO + MLflow)
+	@echo "$(GREEN)Запуск всех сервисов...$(NC)"
+	$(DOCKER_COMPOSE) up -d
+	@sleep 5
+	@echo "$(GREEN)Все сервисы запущены!$(NC)"
+	@echo "$(YELLOW)Django: http://localhost:8000$(NC)"
+	@echo "$(YELLOW)MinIO API: http://localhost:9000$(NC)"
+	@echo "$(YELLOW)MinIO Console: http://localhost:9001 (minioadmin/minioadmin)$(NC)"
+	@echo "$(YELLOW)MLflow: http://localhost:5000$(NC)"
+
+full-down: ##  Остановить все сервисы
+	@echo "$(GREEN)Остановка всех сервисов...$(NC)"
+	$(DOCKER_COMPOSE) down
+
+# ==============================================================================
 # По умолчанию
 # ==============================================================================
 
