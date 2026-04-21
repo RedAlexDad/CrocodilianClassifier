@@ -241,7 +241,8 @@ frontend-logs: ## Логи frontend
 backend-logs: ## Логи backend
 	$(DOCKER_COMPOSE) logs -f backend
 
-web-logs: backend-logs ## Алиас для backend-logs
+web-logs: ## Логи backend + frontend вместе
+	$(DOCKER_COMPOSE) logs -f backend frontend
 
 mlflow-logs: ## Логи mlflow
 	$(DOCKER_COMPOSE) logs -f mlflow
