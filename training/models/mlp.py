@@ -26,9 +26,9 @@ class MLPModel(nn.Module):
             layers.extend(
                 [
                     nn.Linear(prev_size, hidden_size),
-                    nn.BatchNorm1d(hidden_size),
+                    # nn.BatchNorm1d(hidden_size),
                     nn.ReLU(),
-                    nn.Dropout(dropout),
+                    # nn.Dropout(dropout),
                 ]
             )
             prev_size = hidden_size

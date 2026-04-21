@@ -21,25 +21,33 @@ export function ClassifierWidget() {
     (state: RootState) => state.classifier
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [availableModels, setAvailableModels] = useState<string[]>(['CNN Model', 'MLP Model', 'ResNet20']);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [showMlflowModal, setShowMlflowModal] = useState(false);
   const [mlflowRuns, setMlflowRuns] = useState<MlflowRun[]>([]);
   const [loadingRuns, setLoadingRuns] = useState(false);
   const [downloadingRun, setDownloadingRun] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadModels = useCallback(() => {
     fetch('/api/models')
       .then(res => res.json())
       .then(data => {
-        if (data.models) {
-          const names = data.models.map((m: string | {name: string}) => 
+        if (data.models && data.models.length > 0) {
+          const names = data.models.map((m: string | {name: string}) =>
             typeof m === 'string' ? m : m.name
           );
-          setAvailableModels(names.length ? names : ['CNN Model', 'MLP Model', 'ResNet20']);
+          setAvailableModels(names);
+        } else {
+          setAvailableModels([]);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        setAvailableModels([]);
+      });
   }, []);
+
+  useEffect(() => {
+    loadModels();
+  }, [loadModels]);
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,6 +118,8 @@ export function ClassifierWidget() {
       const data = await response.json();
       if (data.success) {
         alert(`Модель ${data.model} загружена!`);
+        loadModels(); // Обновляем список моделей
+        setShowMlflowModal(false);
       } else {
         alert(`Ошибка: ${data.error}`);
       }
@@ -118,7 +128,7 @@ export function ClassifierWidget() {
     } finally {
       setDownloadingRun(null);
     }
-  }, []);
+  }, [loadModels]);
 
   const classLabels = ['Крокодил', 'Аллигатор', 'Кайман'];
 
@@ -139,11 +149,17 @@ export function ClassifierWidget() {
           <label className="form-label" style={{ marginTop: '15px' }}>
             Выберите модель:
           </label>
-          <select name="modelName">
-            {availableModels.map(name => (
-              <option key={name} value={name}>{name}</option>
-            ))}
-          </select>
+          {availableModels.length === 0 ? (
+            <div className="no-models-warning">
+              <p>⚠️ Нет доступных моделей. Загрузите модель через <a href="/models">Управление моделями</a></p>
+            </div>
+          ) : (
+            <select name="modelName">
+              {availableModels.map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+          )}
 
           <div className="model-actions">
             <button type="button" className="mlflow-btn" onClick={openMlflowModal}>
@@ -156,7 +172,7 @@ export function ClassifierWidget() {
             type="submit"
             value={isLoading ? 'Классификация...' : 'Классифицировать'}
             onClick={handleSubmit}
-            disabled={!selectedFile || isLoading}
+            disabled={!selectedFile || isLoading || availableModels.length === 0}
           />
         </div>
 

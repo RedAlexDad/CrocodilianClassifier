@@ -10,7 +10,7 @@ import os
 import boto3
 
 MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000")
-MLFLOW_BUCKET = "crocodilian"
+MLFLOW_BUCKET = "crocodilian-artifacts"
 
 # Классы по вашему варианту: крокодил, аллигатор, кайман
 imageClassList = {"0": "Крокодил", "1": "Аллигатор", "2": "Кайман"}
@@ -113,14 +113,22 @@ def download_mlflow_model_api(request):
         )
 
         bucket = MLFLOW_BUCKET
-        prefix = f"mlflow-artifacts/{run_id}/artifacts/"
+        # Ищем модель в разных возможных путях
+        possible_prefixes = [
+            f"{run_id}/artifacts/",
+            f"1/{run_id}/artifacts/",
+            f"0/{run_id}/artifacts/",
+        ]
 
         onnx_key = None
-        response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
-        for obj in response.get("Contents", []):
-            key = obj["Key"]
-            if key.endswith(".onnx"):
-                onnx_key = key
+        for prefix in possible_prefixes:
+            response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+            for obj in response.get("Contents", []):
+                key = obj["Key"]
+                if key.endswith(".onnx"):
+                    onnx_key = key
+                    break
+            if onnx_key:
                 break
 
         if not onnx_key:
@@ -177,18 +185,18 @@ def get_available_models():
                 if key.endswith(".onnx") and "/" not in key:
                     models.append(key)
 
-            return models if models else ["cifar100.onnx"]
+            return models
         except Exception as e:
             print(f"Ошибка получения списка моделей: {e}")
-            return ["cifar100.onnx"]
+            return []
     else:
         # Локальный режим
         models_dir = os.path.join(settings.BASE_DIR, "media", "models")
         if not os.path.exists(models_dir):
-            return ["cifar100.onnx"]
+            return []
 
         models = [f for f in os.listdir(models_dir) if f.endswith(".onnx")]
-        return models if models else ["cifar100.onnx"]
+        return models
 
 
 def scoreImagePage(request):
@@ -414,3 +422,68 @@ def predictImageData(modelName, filePath):
 
     except Exception as e:
         return f"Ошибка: {str(e)}"
+
+
+def model_upload_api(request):
+    """API для загрузки модели через frontend"""
+    from django.http import JsonResponse
+    from django.contrib import messages
+
+    if request.method != "POST":
+        return JsonResponse({"error": "METHOD_NOT_ALLOWED"}, status=405)
+
+    if "modelFile" not in request.FILES:
+        return JsonResponse({"error": "NO_FILE"}, status=400)
+
+    model_file = request.FILES["modelFile"]
+
+    if not model_file.name.endswith(".onnx"):
+        return JsonResponse({"error": "INVALID_FORMAT"}, status=400)
+
+    try:
+        storage = default_storage
+        s3 = storage.connection
+        bucket = s3.Bucket(settings.AWS_STORAGE_BUCKET_NAME)
+
+        model_key = f"media/models/{model_file.name}"
+        bucket.upload_fileobj(
+            model_file.file,
+            model_key,
+            ExtraArgs={
+                "ACL": "public-read",
+                "ContentType": model_file.content_type or "application/octet-stream",
+            },
+        )
+
+        return JsonResponse({"success": True, "model": model_file.name})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+def model_delete_api(request):
+    """API для удаления модели"""
+    from django.http import JsonResponse
+
+    if request.method != "DELETE" and request.method != "GET":
+        return JsonResponse({"error": "METHOD_NOT_ALLOWED"}, status=405)
+
+    model_name = request.GET.get("delete_model") or request.DELETE.get("delete_model")
+    if not model_name:
+        return JsonResponse({"error": "NO_MODEL_NAME"}, status=400)
+
+    try:
+        storage = default_storage
+        s3 = storage.connection
+        bucket = s3.Bucket(settings.AWS_STORAGE_BUCKET_NAME)
+
+        full_key = f"media/models/{model_name}"
+        objs = list(bucket.objects.filter(Prefix=full_key))
+
+        if not objs:
+            return JsonResponse({"error": "MODEL_NOT_FOUND"}, status=404)
+
+        bucket.delete_objects(Delete={"Objects": [{"Key": full_key}]})
+
+        return JsonResponse({"success": True})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
