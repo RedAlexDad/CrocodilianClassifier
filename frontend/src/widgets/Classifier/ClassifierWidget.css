@@ -1,0 +1,116 @@
+.classifier-widget {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.drop-zone {
+  border: 2px dashed #ccc;
+  border-radius: 12px;
+  padding: 48px;
+  text-align: center;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.drop-zone.active {
+  border-color: #4f46e5;
+  background: rgba(79, 70, 229, 0.1);
+}
+
+.drop-zone input[type="file"] {
+  display: none;
+}
+
+.drop-zone label {
+  cursor: pointer;
+  display: block;
+}
+
+.drop-zone img {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+}
+
+.drop-zone svg {
+  color: #9ca3af;
+  margin-bottom: 16px;
+}
+
+.clear-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  border-radius: 50%;
+  padding: 8px;
+  color: white;
+  cursor: pointer;
+}
+
+.submit-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px 24px;
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.result {
+  margin-top: 24px;
+  padding: 24px;
+  background: #f0fdf4;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.result h3 {
+  margin: 0 0 8px;
+  color: #166534;
+}
+
+.prediction-text {
+  font-size: 24px;
+  font-weight: bold;
+  color: #15803d;
+}
+
+.result-image {
+  margin-top: 16px;
+  border-radius: 8px;
+  max-width: 200px;
+}
+
+.error {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fef2f2;
+  color: #dc2626;
+  border-radius: 8px;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

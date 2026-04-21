@@ -151,12 +151,12 @@ train-compared: ## Сравнить все оптимизаторы
 # Docker Compose
 # ==============================================================================
 
-full-up: ## Запустить все сервисы (Django + MinIO + MLflow)
+full-up: ## Запустить все сервисы (Frontend + Django + MinIO + MLflow)
 	@echo "$(GREEN)Запуск всех сервисов...$(NC)"
 	$(DOCKER_COMPOSE) up -d
-	@sleep 10
-	@echo ""
-	@echo "$(GREEN)Сервисы запущены:$(NC)"
+	@sleep 5
+	@echo "$(GREEN)Сервисы запущены!$(NC)"
+	@echo "$(YELLOW)Frontend:   http://localhost:5173$(NC)"
 	@echo "$(YELLOW)Django:      http://localhost:8000$(NC)"
 	@echo "$(YELLOW)MinIO API:   http://localhost:9000$(NC)"
 	@echo "$(YELLOW)MinIO Console: http://localhost:9001$(NC)"
