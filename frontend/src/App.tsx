@@ -12,7 +12,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <div className="fixed-header">
           <div className="container">
-            <div className="header-title">Классификатор: крокодил, аллигатор, кайман</div>
+            <div className="header-title">Классификация: Крокодилы, Аллигаторы, Кайманы</div>
           </div>
         </div>
 
@@ -22,7 +22,7 @@ function App() {
 
         <div className="fixed-footer">
           <div className="container">
-            Домашнее задание №1 - Классификация изображений
+            Домашнее задание №1 | РНС | МГТУ им. Баумана
           </div>
         </div>
       </QueryClientProvider>

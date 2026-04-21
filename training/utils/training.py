@@ -292,6 +292,7 @@ class Trainer:
             y_pred_labels = y_pred.argmax(axis=-1)
 
             # Confusion Matrix
+            print("Creating confusion matrix...")
             cm = confusion_matrix(y_true_labels, y_pred_labels)
             fig, ax = plt.subplots(figsize=(8, 6))
             sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
@@ -303,9 +304,11 @@ class Trainer:
             plt.tight_layout()
             plt.savefig("/tmp/confusion_matrix.png", dpi=100)
             plt.close()
+            print("Logging confusion_matrix.png...")
             mlflow.log_artifact("/tmp/confusion_matrix.png", "artifacts")
 
             # Normalized Confusion Matrix
+            print("Creating normalized confusion matrix...")
             cm_norm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
             fig, ax = plt.subplots(figsize=(8, 6))
             sns.heatmap(cm_norm, annot=True, fmt=".2f", cmap="Blues",
@@ -317,9 +320,11 @@ class Trainer:
             plt.tight_layout()
             plt.savefig("/tmp/confusion_matrix_normalized.png", dpi=100)
             plt.close()
+            print("Logging confusion_matrix_normalized.png...")
             mlflow.log_artifact("/tmp/confusion_matrix_normalized.png", "artifacts")
 
             # Classification Report
+            print("Creating classification report...")
             report = classification_report(
                 y_true_labels, y_pred_labels,
                 target_names=class_names or ["крокодил", "аллигатор", "кайман"],
@@ -327,13 +332,16 @@ class Trainer:
             )
             with open("/tmp/classification_report.txt", "w") as f:
                 f.write(report)
+            print("Logging classification_report.txt...")
             mlflow.log_artifact("/tmp/classification_report.txt", "artifacts")
 
             # Save best.pt model
+            print(f"Checkpoint path: {checkpoint_path}")
             if checkpoint_path and os.path.exists(checkpoint_path):
                 mlflow.log_artifact(checkpoint_path, "artifacts")
 
             # Save ONNX model
+            print(f"ONNX path: {onnx_path}")
             if onnx_path and os.path.exists(onnx_path):
                 mlflow.log_artifact(onnx_path, "artifacts")
 
@@ -341,9 +349,12 @@ class Trainer:
             mlflow.log_metric("final_val_accuracy", self.best_acc)
             mlflow.log_metric("final_train_loss", self.history["train_loss"][-1] if self.history["train_loss"] else 0)
             mlflow.log_metric("final_val_loss", self.history["val_loss"][-1] if self.history["val_loss"] else 0)
+            print("All artifacts logged successfully!")
 
         except Exception as e:
+            import traceback
             print(f"Warning: Could not log artifacts: {e}")
+            traceback.print_exc()
 
     def train_two_stage(
         self,

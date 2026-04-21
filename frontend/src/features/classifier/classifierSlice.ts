@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 
 export interface PredictionResult {
@@ -20,21 +20,6 @@ const initialState: ClassifierState = {
   error: null,
 };
 
-export const classifyImage = createAsyncThunk(
-  'classifier/classify',
-  async (formData: FormData) => {
-    const response = await fetch('/predictImage', {
-      method: 'POST',
-      body: formData,
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    const data = await response.json();
-    return data;
-  }
-);
-
 const classifierSlice = createSlice({
   name: 'classifier',
   initialState,
@@ -49,21 +34,6 @@ const classifierSlice = createSlice({
       state.prediction = null;
       state.error = null;
     },
-  },
-  extraReducers: (builder) => {
-    builder
-      .addCase(classifyImage.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(classifyImage.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.prediction = action.payload;
-      })
-      .addCase(classifyImage.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.error.message || 'Ошибка классификации';
-      });
   },
 });
 
