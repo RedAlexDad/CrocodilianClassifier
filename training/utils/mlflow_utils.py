@@ -55,6 +55,12 @@ def setup_mlflow(experiment_name=None, tracking_uri=None):
     except Exception as e:
         print(f"System metrics: {e}")
 
+    # Enable tracing
+    try:
+        mlflow.tracing.enable()
+    except Exception as e:
+        print(f"Tracing: {e}")
+
     return mlflow
 
 

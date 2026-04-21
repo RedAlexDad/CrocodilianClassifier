@@ -61,8 +61,8 @@ def train_model(
     model_cfg = MODEL_CONFIGS[model_name]
     config = model_cfg["config"]()
     config.setup_dirs()
-    device = torch.device(device)
-    print(f"Устройство: {device}")
+    device_obj = torch.device(device)
+    print(f"Устройство: {device_obj}")
     set_seed(seed)
 
     import mlflow
@@ -77,7 +77,7 @@ def train_model(
             "epochs": epochs or config.EPOCHS,
             "lr": lr or config.LEARNING_RATE,
             "image_size": model_cfg["image_size"],
-            "device": device.type,
+            "device": device_obj.type,
         })
 
         if epochs is not None:
@@ -99,18 +99,18 @@ def train_model(
                 hidden_size=config.HIDDEN_SIZE,
                 num_classes=len(config.CLASSES),
                 dropout=config.DROPOUT
-            ).to(device)
+            ).to(device_obj)
         elif model_name == "mlp":
             model = model_class(
                 num_classes=len(config.CLASSES),
                 input_size=config.INPUT_SIZE,
                 hidden_layers=config.HIDDEN_LAYERS,
                 dropout=config.DROPOUT,
-            ).to(device)
+            ).to(device_obj)
         elif model_name == "resnet20":
-            model = model_class(num_classes=len(config.CLASSES), pretrained=config.PRETRAINED).to(device)
+            model = model_class(num_classes=len(config.CLASSES), pretrained=config.PRETRAINED).to(device_obj)
         elif model_name == "mobilenet":
-            model = model_class(num_classes=len(config.CLASSES), pretrained=config.PRETRAINED).to(device)
+            model = model_class(num_classes=len(config.CLASSES), pretrained=config.PRETRAINED).to(device_obj)
 
         print(f"\nАрхитектура {model_name.upper()}:")
         print(model)
@@ -134,7 +134,7 @@ def train_model(
             mlflow.log_metric("val_acc", acc, step=epoch)
 
         trainer = Trainer(
-            model, criterion, optimizer, device,
+            model, criterion, optimizer, device_obj,
             checkpoint_path=config.CHECKPOINT,
             scheduler=scheduler if hasattr(config, "SCHEDULER_STEP") else None,
             mlflow_callback=mlflow_callback
@@ -144,7 +144,7 @@ def train_model(
             dataloader, epochs=config.EPOCHS, model_name=config.MODEL_NAME, log_every=1
         )
 
-        _, _, y_true, y_pred = validate(model, dataloader["test"], criterion, device)
+        _, _, y_true, y_pred = validate(model, dataloader["test"], criterion, device_obj)
         print_classification_report(y_true, y_pred, config.CLASSES, "Test")
 
         export_to_onnx(
@@ -152,11 +152,11 @@ def train_model(
             config.MODEL_NAME,
             config.ONNX_PATH,
             (3, model_cfg["image_size"], model_cfg["image_size"]),
-            device,
+            device_obj,
         )
 
         trainer.log_final_artifacts(
-            dataloader, criterion, device,
+            dataloader, criterion, device_obj,
             class_names=config.CLASSES,
             checkpoint_path=config.CHECKPOINT,
             onnx_path=config.ONNX_PATH
