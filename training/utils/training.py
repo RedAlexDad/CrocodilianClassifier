@@ -1,12 +1,17 @@
 """
 Функции для обучения моделей
 """
+import os
+import io
 import torch
 import torch.nn as nn
 import numpy as np
 import psutil
 from tqdm.auto import tqdm
 from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def train_epoch(model, dataloader, criterion, optimizer, device, scheduler=None):
@@ -235,7 +240,6 @@ class Trainer:
         if mlflow_available:
             try:
                 import mlflow
-                import matplotlib.pyplot as plt
 
                 # График обучения
                 fig, axes = plt.subplots(1, 2, figsize=(12, 4))
@@ -264,6 +268,82 @@ class Trainer:
         print(f"\n✓ {model_name} завершено! Лучшая точность: {self.best_acc:.2f}%")
 
         return self.best_acc
+
+    def log_final_artifacts(self, dataloader, criterion, device, class_names=None, checkpoint_path=None, onnx_path=None):
+        """Логирование финальных артефактов после обучения"""
+        mlflow_available = False
+        try:
+            import mlflow
+            mlflow_available = True
+        except ImportError:
+            return
+
+        if not mlflow_available:
+            return
+
+        try:
+            # Получить предсказания на тесте
+            _, _, y_true, y_pred = validate(self.model, dataloader["test"], criterion, device)
+
+            if len(y_true) == 0:
+                return
+
+            y_true_labels = y_true.argmax(axis=-1)
+            y_pred_labels = y_pred.argmax(axis=-1)
+
+            # Confusion Matrix
+            cm = confusion_matrix(y_true_labels, y_pred_labels)
+            fig, ax = plt.subplots(figsize=(8, 6))
+            sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
+                       xticklabels=class_names or ["крокодил", "аллигатор", "кайман"],
+                       yticklabels=class_names or ["крокодил", "аллигатор", "кайман"],
+                       ax=ax)
+            ax.set_xlabel("Predicted")
+            ax.set_ylabel("True")
+            plt.tight_layout()
+            plt.savefig("/tmp/confusion_matrix.png", dpi=100)
+            plt.close()
+            mlflow.log_artifact("/tmp/confusion_matrix.png", "artifacts")
+
+            # Normalized Confusion Matrix
+            cm_norm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+            fig, ax = plt.subplots(figsize=(8, 6))
+            sns.heatmap(cm_norm, annot=True, fmt=".2f", cmap="Blues",
+                       xticklabels=class_names or ["крокодил", "аллигатор", "кайман"],
+                       yticklabels=class_names or ["крокодил", "аллигатор", "кайман"],
+                       ax=ax)
+            ax.set_xlabel("Predicted")
+            ax.set_ylabel("True")
+            plt.tight_layout()
+            plt.savefig("/tmp/confusion_matrix_normalized.png", dpi=100)
+            plt.close()
+            mlflow.log_artifact("/tmp/confusion_matrix_normalized.png", "artifacts")
+
+            # Classification Report
+            report = classification_report(
+                y_true_labels, y_pred_labels,
+                target_names=class_names or ["крокодил", "аллигатор", "кайман"],
+                digits=4
+            )
+            with open("/tmp/classification_report.txt", "w") as f:
+                f.write(report)
+            mlflow.log_artifact("/tmp/classification_report.txt", "artifacts")
+
+            # Save best.pt model
+            if checkpoint_path and os.path.exists(checkpoint_path):
+                mlflow.log_artifact(checkpoint_path, "artifacts")
+
+            # Save ONNX model
+            if onnx_path and os.path.exists(onnx_path):
+                mlflow.log_artifact(onnx_path, "artifacts")
+
+            # Log final metrics
+            mlflow.log_metric("final_val_accuracy", self.best_acc)
+            mlflow.log_metric("final_train_loss", self.history["train_loss"][-1] if self.history["train_loss"] else 0)
+            mlflow.log_metric("final_val_loss", self.history["val_loss"][-1] if self.history["val_loss"] else 0)
+
+        except Exception as e:
+            print(f"Warning: Could not log artifacts: {e}")
 
     def train_two_stage(
         self,
