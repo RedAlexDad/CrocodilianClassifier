@@ -73,7 +73,7 @@ def get_model_description(model_type: str) -> str:
     return config["description"]
 
 
-def get_model_trainer(model_type: str):
+def get_model_trainer(model_type: str) -> callable:
     """Получить функцию обучения для модели"""
     config = get_model_config(model_type)
     if config is None:
