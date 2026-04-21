@@ -7,21 +7,17 @@ export interface PredictionResult {
 }
 
 interface ClassifierState {
-  selectedFile: File | null;
   imageUrl: string | null;
   prediction: PredictionResult | null;
   isLoading: boolean;
   error: string | null;
-  availableModels: string[];
 }
 
 const initialState: ClassifierState = {
-  selectedFile: null,
   imageUrl: null,
   prediction: null,
   isLoading: false,
   error: null,
-  availableModels: [],
 };
 
 export const classifyImage = createAsyncThunk(
@@ -31,6 +27,9 @@ export const classifyImage = createAsyncThunk(
       method: 'POST',
       body: formData,
     });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
     const data = await response.json();
     return data;
   }
@@ -40,14 +39,12 @@ const classifierSlice = createSlice({
   name: 'classifier',
   initialState,
   reducers: {
-    setSelectedFile: (state, action: PayloadAction<{ file: File; url: string }>) => {
-      state.selectedFile = action.payload.file;
+    setSelectedFile: (state, action: PayloadAction<{ url: string }>) => {
       state.imageUrl = action.payload.url;
       state.prediction = null;
       state.error = null;
     },
     clearPrediction: (state) => {
-      state.selectedFile = null;
       state.imageUrl = null;
       state.prediction = null;
       state.error = null;

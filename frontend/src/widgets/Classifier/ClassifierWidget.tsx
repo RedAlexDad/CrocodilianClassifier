@@ -1,21 +1,23 @@
 import { useCallback, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/store/hooks';
 import { setSelectedFile, classifyImage, clearPrediction } from '@/features/classifier/classifierSlice';
-import { Upload, Loader2, X, Image as ImageIcon } from 'lucide-react';
+import { Upload, Loader2, X } from 'lucide-react';
 import './ClassifierWidget.css';
 
 export function ClassifierWidget() {
   const dispatch = useAppDispatch();
-  const { imageUrl, prediction, isLoading, error, selectedFile } = useAppSelector(
+  const { imageUrl, prediction, isLoading, error } = useAppSelector(
     (state) => state.classifier
   );
   const [dragActive, setDragActive] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleFile = useCallback(
     (file: File) => {
       if (!file.type.startsWith('image/')) return;
       const url = URL.createObjectURL(file);
-      dispatch(setSelectedFile({ file, url }));
+      setSelectedFile(file);
+      dispatch(setSelectedFile({ url }));
     },
     [dispatch]
   );
