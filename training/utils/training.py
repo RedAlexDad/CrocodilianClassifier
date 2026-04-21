@@ -186,11 +186,27 @@ class Trainer:
             if mlflow_available and (epoch + 1) % log_every == 0 or epoch == 0:
                 try:
                     import mlflow
+                    import psutil
+                    import torch
+
+                    # Метрики обучения
                     mlflow.log_metric("train_loss", train_loss, step=epoch)
                     mlflow.log_metric("train_acc", train_acc, step=epoch)
                     mlflow.log_metric("val_loss", val_loss, step=epoch)
                     mlflow.log_metric("val_acc", val_acc, step=epoch)
                     mlflow.log_metric("best_acc", self.best_acc, step=epoch)
+
+                    # System metrics
+                    mlflow.log_metric("system_cpu_percent", psutil.cpu_percent(), step=epoch)
+                    mlflow.log_metric("system_memory_percent", psutil.virtual_memory().percent, step=epoch)
+                    mlflow.log_metric("system_disk_percent", psutil.disk_usage('/').percent, step=epoch)
+
+                    # GPU metrics
+                    if torch.cuda.is_available():
+                        mlflow.log_metric("gpu_memory_allocated_mb", torch.cuda.memory_allocated() / 1024**2, step=epoch)
+                        mlflow.log_metric("gpu_memory_reserved_mb", torch.cuda.memory_reserved() / 1024**2, step=epoch)
+                        for i in range(torch.cuda.device_count()):
+                            mlflow.log_metric(f"gpu_{i}_utilization", torch.cuda.utilization(i), step=epoch)
                 except Exception:
                     pass
 
@@ -212,6 +228,36 @@ class Trainer:
         # Загрузка лучшей модели
         if self.best_state is not None:
             self.model.load_state_dict(self.best_state)
+
+        # Сохранить артефакты после обучения
+        if mlflow_available:
+            try:
+                import mlflow
+                import matplotlib.pyplot as plt
+
+                # График обучения
+                fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+
+                axes[0].plot(self.history["train_loss"], label="Train")
+                axes[0].plot(self.history["val_loss"], label="Val")
+                axes[0].set_title(f"{model_name} - Loss")
+                axes[0].set_xlabel("Epoch")
+                axes[0].set_ylabel("Loss")
+                axes[0].legend()
+
+                axes[1].plot(self.history["train_acc"], label="Train")
+                axes[1].plot(self.history["val_acc"], label="Val")
+                axes[1].set_title(f"{model_name} - Accuracy")
+                axes[1].set_xlabel("Epoch")
+                axes[1].set_ylabel("Accuracy")
+                axes[1].legend()
+
+                plt.tight_layout()
+                plt.savefig("/tmp/training_plot.png", dpi=100)
+                plt.close()
+                mlflow.log_artifact("/tmp/training_plot.png", "plots")
+            except Exception:
+                pass
 
         print(f"\n✓ {model_name} завершено! Лучшая точность: {self.best_acc:.2f}%")
 
