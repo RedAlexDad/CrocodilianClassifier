@@ -35,6 +35,43 @@ const classifierSlice = createSlice({
       state.error = null;
     },
   },
+  extraReducers: (builder) => {
+    builder
+      .addMatcher(
+        (action): action is { type: 'classifier/classify/pending' } =>
+          action.type === 'classifier/classify/pending',
+        (state) => {
+          state.isLoading = true;
+          state.error = null;
+        }
+      )
+      .addMatcher(
+        (
+          action
+        ): action is {
+          type: 'classifier/classify/fulfilled';
+          payload: PredictionResult;
+        } => action.type === 'classifier/classify/fulfilled',
+        (state, action) => {
+          state.isLoading = false;
+          state.prediction = action.payload;
+          state.imageUrl = action.payload.image_url;
+          state.error = null;
+        }
+      )
+      .addMatcher(
+        (
+          action
+        ): action is {
+          type: 'classifier/classify/rejected';
+          payload: { message: string };
+        } => action.type === 'classifier/classify/rejected',
+        (state, action) => {
+          state.isLoading = false;
+          state.error = action.payload.message;
+        }
+      );
+  },
 });
 
 export const { setSelectedFile, clearPrediction } = classifierSlice.actions;

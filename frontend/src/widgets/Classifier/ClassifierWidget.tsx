@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Loader2 } from 'lucide-react';
 import type { RootState } from '@/app/store/store';
@@ -17,6 +17,7 @@ export function ClassifierWidget() {
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const modelSelectRef = useRef<HTMLSelectElement>(null);
 
   const loadModels = useCallback(() => {
     fetch('/api/models')
@@ -56,16 +57,33 @@ export function ClassifierWidget() {
     if (!selectedFile) return;
 
     const formData = new FormData();
-    formData.append('file', selectedFile);
+    formData.append('filePath', selectedFile);
+    const modelName =
+      modelSelectRef.current?.value ||
+      availableModels[0] ||
+      '';
+    if (modelName) {
+      formData.append('modelName', modelName);
+    }
 
     dispatch({ type: 'classifier/classify/pending' });
 
     try {
       const response = await fetch('/predictImage', {
         method: 'POST',
+        headers: {
+          Accept: 'application/json',
+        },
         body: formData,
       });
       const data = await response.json();
+      if (!response.ok) {
+        dispatch({
+          type: 'classifier/classify/rejected',
+          payload: { message: data.error || `Ошибка ${response.status}` },
+        });
+        return;
+      }
       dispatch({
         type: 'classifier/classify/fulfilled',
         payload: data,
@@ -76,7 +94,7 @@ export function ClassifierWidget() {
         payload: { message: (err as Error).message || 'Ошибка классификации' },
       });
     }
-  }, [dispatch, selectedFile]);
+  }, [dispatch, selectedFile, availableModels]);
 
   const handleClear = useCallback(() => {
     setSelectedFile(null);
@@ -105,7 +123,7 @@ export function ClassifierWidget() {
               <p>⚠️ Нет доступных моделей. Загрузите модель через <a href="/models">Управление моделями</a></p>
             </div>
           ) : (
-            <select name="modelName">
+            <select ref={modelSelectRef} name="modelName">
               {availableModels.map(name => (
                 <option key={name} value={name}>{name}</option>
               ))}

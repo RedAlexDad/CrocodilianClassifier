@@ -141,7 +141,9 @@ def download_mlflow_model_api(request):
         s3.download_file(bucket, onnx_key, local_path)
 
         storage = default_storage
-        model_key = f"media/models/{model_name}"
+        # Имя без префикса "media/": django-storages сам добавляет location ("media"),
+        # иначе файл окажется в media/media/models/ и не попадёт в список моделей.
+        model_key = f"models/{model_name}"
         with open(local_path, "rb") as f:
             storage.save(model_key, ContentFile(f.read()))
 
@@ -210,6 +212,7 @@ def scoreImagePage(request):
     return render(request, "scorepage.html", context)
 
 
+@csrf_exempt
 def predictImage(request):
     """Обработка загруженного изображения и предсказание"""
     if request.method == "POST" and "filePath" in request.FILES:
@@ -235,7 +238,18 @@ def predictImage(request):
             "available_models": get_available_models(),
             "current_model": modelName,
         }
+        if request.accepts("application/json"):
+            return JsonResponse(
+                {
+                    "scorePrediction": scorePrediction,
+                    "image_url": file_url,
+                    "current_model": modelName,
+                }
+            )
         return render(request, "scorepage.html", context)
+
+    if request.method == "POST" and request.accepts("application/json"):
+        return JsonResponse({"error": "filePath required"}, status=400)
 
     return redirect("scoreImagePage")
 
