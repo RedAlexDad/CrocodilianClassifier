@@ -13,7 +13,9 @@ interface MlflowRun {
   model_name?: string;
   optimizer?: string;
   accuracy?: number;
-  loss?: number;
+  precision?: number;
+  recall?: number;
+  f1_score?: number;
   date?: string;
   status?: string;
 }
@@ -267,11 +269,17 @@ export function ModelManagementWidget() {
                           {run.optimizer && <span className="optimizer">{run.optimizer}</span>}
                         </div>
                         <div className="run-metrics">
-                          {run.accuracy !== undefined && (
+                          {run.accuracy !== null && run.accuracy !== undefined && (
                             <span className="metric">Accuracy: {(run.accuracy * 100).toFixed(2)}%</span>
                           )}
-                          {run.loss !== undefined && (
-                            <span className="metric">Loss: {run.loss.toFixed(4)}</span>
+                          {run.precision !== null && run.precision !== undefined && (
+                            <span className="metric">Precision: {(run.precision * 100).toFixed(2)}%</span>
+                          )}
+                          {run.recall !== null && run.recall !== undefined && (
+                            <span className="metric">Recall: {(run.recall * 100).toFixed(2)}%</span>
+                          )}
+                          {run.f1_score !== null && run.f1_score !== undefined && (
+                            <span className="metric">F1: {(run.f1_score * 100).toFixed(2)}%</span>
                           )}
                         </div>
                         <div className="run-meta">

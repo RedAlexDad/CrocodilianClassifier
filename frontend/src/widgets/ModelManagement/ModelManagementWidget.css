@@ -131,11 +131,13 @@
 
 .modal {
   background: white;
-  border-radius: 8px;
-  max-width: 500px;
+  border-radius: 12px;
+  max-width: 900px;
   width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
@@ -238,14 +240,18 @@
 
 .run-metrics {
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 6px;
 }
 
 .metric {
-  font-size: 14px;
+  font-size: 13px;
   color: #059669;
   font-weight: 500;
+  padding: 3px 8px;
+  background: #d1fae5;
+  border-radius: 4px;
 }
 
 .run-meta {

@@ -85,6 +85,10 @@ def get_mlflow_runs_api(request):
                             "model_name": "Unknown",
                             "date": obj["LastModified"].strftime("%Y-%m-%d %H:%M"),
                             "has_onnx": False,
+                            "accuracy": None,
+                            "precision": None,
+                            "recall": None,
+                            "f1_score": None,
                         }
 
                     # Определяем тип модели по имени файла .onnx
@@ -92,6 +96,34 @@ def get_mlflow_runs_api(request):
                         model_file = key.split("/")[-1].replace(".onnx", "")
                         runs_dict[run_id]["model_name"] = model_file.upper()
                         runs_dict[run_id]["has_onnx"] = True
+
+                    # Читаем метрики из classification_report.txt
+                    if key.endswith("classification_report.txt"):
+                        try:
+                            obj_data = s3.get_object(Bucket=bucket, Key=key)
+                            report = obj_data["Body"].read().decode("utf-8")
+
+                            # Парсим accuracy из строки "accuracy"
+                            for line in report.split("\n"):
+                                if "accuracy" in line.lower():
+                                    parts = line.split()
+                                    if len(parts) >= 2:
+                                        try:
+                                            runs_dict[run_id]["accuracy"] = float(parts[1])
+                                        except (ValueError, IndexError):
+                                            pass
+
+                                # Парсим weighted avg для precision, recall, f1
+                                if "weighted avg" in line.lower():
+                                    parts = line.split()
+                                    try:
+                                        runs_dict[run_id]["precision"] = float(parts[2])
+                                        runs_dict[run_id]["recall"] = float(parts[3])
+                                        runs_dict[run_id]["f1_score"] = float(parts[4])
+                                    except (ValueError, IndexError):
+                                        pass
+                        except Exception as e:
+                            print(f"Ошибка чтения classification_report для {run_id}: {e}")
 
         # Фильтруем только runs с ONNX моделями
         result = [run for run in runs_dict.values() if run["has_onnx"]]
