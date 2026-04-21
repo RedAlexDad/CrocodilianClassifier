@@ -44,8 +44,11 @@ help: ## Показать справку
 	@echo "$(BLUE)Крокодилы - Классификатор ДЗ1$(NC)"
 	@echo ""
 	@echo "$(GREEN)Обучение:$(NC)"
-	@echo "  $(MAKE) train [model=mlp|cnn|resnet20|mobilenet]    Обучить модель"
-	@echo "  $(MAKE) train-all                         Обучить все модели"
+	@echo "  $(MAKE) train model=cnn                         Обучить CNN"
+	@echo "  $(MAKE) train model=resnet20                  Обучить ResNet20"
+	@echo "  $(MAKE) train model=mlp OPT='--optimizer adam'   MLP с Adam"
+	@echo "  $(MAKE) train model=cnn EPOCHS='--epochs 100'     CNN, 100 эпох"
+	@echo "  $(MAKE) train model=all                  Обучить все модели"
 	@echo ""
 	@echo "$(GREEN)Docker:$(NC)"
 	@echo "  $(MAKE) full-up                       Запустить все сервисы"
@@ -74,15 +77,16 @@ help: ## Показать справку
 # Обучение моделей
 # ==============================================================================
 
-train: ## Обучить модель (model=mlp|cnn|resnet20|mobilenet)
+train: ## Обучить модель: make train model=cnn [OPT='--optimizer adam'] [EPOCHS='--epochs 100']
 	@echo "$(GREEN)Обучение модели: $(model)$(NC)"
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --model $(model)
-
--train: ## Обучить модель с выбором оптимизатора
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --model $(model) --optimizer $(optimizer)
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --model $(model) $(OPT) $(EPOCHS) $(LR)
 
 train-all: ## Обучить все модели
 	@echo "$(GREEN)Обучение всех моделей...$(NC)"
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --model all
+
+train-compared: ## Сравнить все оптимизаторы
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --model all --compare-optimizers
 	cd $(TRAINING_DIR) && $(PYTHON) main.py --model all
 
 train-compared: ## Сравнить все оптимизаторы

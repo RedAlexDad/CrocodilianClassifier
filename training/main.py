@@ -8,22 +8,52 @@
 import argparse
 import torch
 from options import (
-    MODELS, get_model_trainer, get_default_optimizer, 
-    get_available_optimizers, print_summary
+    MODELS,
+    get_model_trainer,
+    get_default_optimizer,
+    get_available_optimizers,
+    print_summary
 )
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Обучение моделей классификации')
-    parser.add_argument('--model', type=str, choices=MODELS + ['all'], default='all')
-    parser.add_argument('--optimizer', type=str, default=None)
-    parser.add_argument('--epochs', type=int, default=None)
-    parser.add_argument('--epochs-stage1', type=int, default=None)
-    parser.add_argument('--finetune-layers', type=int, default=None)
-    parser.add_argument('--lr', type=float, default=None)
-    parser.add_argument('--lr-finetune', type=float, default=None)
-    parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--compare-optimizers', action='store_true')
+    parser = argparse.ArgumentParser(
+        description='Обучение моделей классификации',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='''
+Доступные модели: mlp, cnn, resnet20, mobilenet, all
+Доступные оптимизаторы: adam, adagrad, rmsprop, sgd
+
+Примеры:
+  python main.py --model cnn                              CNN модель
+  python main.py --model resnet20 --optimizer adam        ResNet20
+  python main.py --model all --epochs 50                Все модели, 50 эпох
+  python main.py --model cnn --lr 0.01 --epochs 100   CNN с LR=0.01
+  python main.py --model all --compare-optimizers       Сравнить оптимизаторы
+        '''
+    )
+    parser.add_argument('--model', type=str, choices=MODELS + ['all'], default='all',
+                        help='Модель для обучения')
+    parser.add_argument('--optimizer', type=str, default=None,
+                        help='Оптимизатор (adam, adagrad, rmsprop, sgd)')
+    parser.add_argument('--epochs', type=int, default=None,
+                        help='Количество эпох')
+    parser.add_argument('--epochs-stage1', type=int, default=None,
+                        help='Эпох этап 1 (только для TL)')
+    parser.add_argument('--finetune-layers', type=int, default=None,
+                        help='Слоёв для fine-tuning')
+    parser.add_argument('--lr', type=float, default=None,
+                        help='Learning rate')
+    parser.add_argument('--lr-finetune', type=float, default=None,
+                        help='LR для fine-tuning')
+    parser.add_argument('--seed', type=int, default=42,
+                        help='Random seed')
+    parser.add_argument('--compare-optimizers', action='store_true',
+                        help='Сравнить все оптимизаторы')
+    parser.add_argument('--batch-size', type=int, default=None,
+                        help='Batch size')
+    parser.add_argument('--weight-decay', type=float, default=1e-4,
+                        help='Weight decay (L2 regularization)')
 
     args = parser.parse_args()
 
