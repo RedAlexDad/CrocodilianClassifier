@@ -70,7 +70,7 @@ help: ## Показать справку
 	@echo "  $(MAKE) full-down                    Остановить все сервисы"
 	@echo "  $(MAKE) deploy                       Пересобрать и запустить все"
 	@echo "  $(MAKE) build                        Собрать Docker образы"
-	@echo "  $(MAKE) web-rebuild                  Пересобрать Django (backend)"
+	@echo "  $(MAKE) backend-rebuild              Пересобрать Django (backend)"
 	@echo "  $(MAKE) frontend-rebuild             Пересобрать React (frontend)"
 	@echo "  $(MAKE) logs service=web             Логи сервиса"
 	@echo "  $(MAKE) clean                        Очистить контейнеры"
@@ -208,10 +208,12 @@ frontend-rebuild: ## Пересобрать и перезапустить тол
 	$(DOCKER_COMPOSE) build frontend
 	$(DOCKER_COMPOSE) up -d --force-recreate frontend
 
-web-rebuild: ## Пересобрать и перезапустить только web контейнер
-	@echo "$(GREEN)Пересборка Web...$(NC)"
+backend-rebuild: ## Пересобрать и перезапустить Django (backend)
+	@echo "$(GREEN)Пересборка Backend (Django)...$(NC)"
 	$(DOCKER_COMPOSE) build web
 	$(DOCKER_COMPOSE) up -d --force-recreate web
+
+web-rebuild: backend-rebuild ## Алиас для backend-rebuild
 
 logs: ## Логи сервиса (service=web|mlflow|minio)
 	$(DOCKER_COMPOSE) logs -f $(service)
