@@ -44,11 +44,10 @@ help: ## Показать справку
 	@echo "$(BLUE)Крокодилы - Классификатор ДЗ1$(NC)"
 	@echo ""
 	@echo "$(GREEN)Обучение:$(NC)"
-	@echo "  $(MAKE) train model=cnn                         Обучить CNN"
-	@echo "  $(MAKE) train model=resnet20                  Обучить ResNet20"
-	@echo "  $(MAKE) train model=mlp OPT='--optimizer adam'   MLP с Adam"
-	@echo "  $(MAKE) train model=cnn EPOCHS='--epochs 100'     CNN, 100 эпох"
-	@echo "  $(MAKE) train model=all                  Обучить все модели"
+	@echo "  $(MAKE) train-cnn         Обучить CNN"
+	@echo "  $(MAKE) train-mlp         Обучить MLP"
+	@echo "  $(MAKE) train-resnet20  Обучить ResNet20"
+	@echo "  $(MAKE) train-all       Обучить все модели"
 	@echo ""
 	@echo "$(GREEN)Docker:$(NC)"
 	@echo "  $(MAKE) full-up                       Запустить все сервисы"
@@ -77,9 +76,9 @@ help: ## Показать справку
 # Обучение моделей
 # ==============================================================================
 
-train: ## Обучить модель: make train model=cnn [OPT='--optimizer adam'] [EPOCHS='--epochs 100']
+train: ## Обучить модель: make train model=cnn optimizer=adam epochs=100
 	@echo "$(GREEN)Обучение модели: $(model)$(NC)"
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --model $(model) $(OPT) $(EPOCHS) $(LR)
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --model $(model) $(OPT)
 
 train-all: ## Обучить все модели
 	@echo "$(GREEN)Обучение всех моделей...$(NC)"
@@ -87,6 +86,22 @@ train-all: ## Обучить все модели
 
 train-compared: ## Сравнить все оптимизаторы
 	cd $(TRAINING_DIR) && $(PYTHON) main.py --model all --compare-optimizers
+
+# ==============================================================================
+# Shortcut команды для обучения
+# ==============================================================================
+
+train-mlp: ## make train-mlp
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --model mlp
+
+train-cnn: ## make train-cnn
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --model cnn
+
+train-resnet20: ## make train-resnet20
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --model resnet20
+
+train-mobilenet: ## make train-mobilenet
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --model mobilenet
 	cd $(TRAINING_DIR) && $(PYTHON) main.py --model all
 
 train-compared: ## Сравнить все оптимизаторы
