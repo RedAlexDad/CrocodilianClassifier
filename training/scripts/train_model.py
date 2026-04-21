@@ -48,7 +48,7 @@ def train_model(
     finetune_layers: Optional[int] = None,
     lr_finetune: Optional[float] = None,
     device: str = "cuda",
-):
+) -> float:
     """Обучение модели"""
     model_name = model_name.lower()
     if model_name not in MODEL_CONFIGS:
@@ -62,6 +62,7 @@ def train_model(
     config = model_cfg["config"]()
     config.setup_dirs()
     device = torch.device(device)
+    print(f"Устройство: {device}")
     set_seed(seed)
 
     import mlflow
@@ -76,6 +77,7 @@ def train_model(
             "epochs": epochs or config.EPOCHS,
             "lr": lr or config.LEARNING_RATE,
             "image_size": model_cfg["image_size"],
+            "device": device.type,
         })
 
         if epochs is not None:

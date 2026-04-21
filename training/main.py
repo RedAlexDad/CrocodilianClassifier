@@ -64,6 +64,7 @@ def main():
     print("Классификация: крокодил, аллигатор, кайман")
     print("=" * 60)
     print(f"PyTorch: {torch.__version__}, CUDA: {torch.cuda.is_available()}")
+    print(f"Устройство: {args.device}")
     print(f"Модель: {args.model}")
     print("=" * 60)
 
