@@ -1,26 +1,31 @@
 """
 MLflow интеграция для отслеживания обучения
+Хранение артефактов в MinIO (S3)
 """
 import os
 import mlflow
 from mlflow.tracking import MlflowClient
 import torch
-import numpy as np
-from PIL import Image
-import io
 
 
 MLFLOW_TRACKING_URI = os.environ.get('MLFLOW_TRACKING_URI', 'http://localhost:5000')
 MLFLOW_EXPERIMENT_NAME = 'crocodilian-classifier'
 
+S3_BUCKET = os.environ.get('AWS_S3_MLWFL_ARTIFACTS', 'mlflow-artifacts')
+S3_ENDPOINT = os.environ.get('MLFLOW_S3_ENDPOINT_URL', 'http://localhost:9000')
+
 
 def setup_mlflow(experiment_name=None, tracking_uri=None):
-    """Настроить MLflow"""
+    """Настроить MLflow с S3 артефактами"""
     uri = tracking_uri or MLFLOW_TRACKING_URI
     experiment = experiment_name or MLFLOW_EXPERIMENT_NAME
     
     mlflow.set_tracking_uri(uri)
     mlflow.set_experiment(experiment)
+    
+    os.environ['AWS_S3_ENDPOINT_URL'] = S3_ENDPOINT
+    os.environ['AWS_ACCESS_KEY_ID'] = 'minioadmin'
+    os.environ['AWS_SECRET_ACCESS_KEY'] = 'minioadmin'
     
     return mlflow
 
@@ -127,3 +132,32 @@ def save_model_for_mlflow(model, model_path, model_name):
     
     torch.save(model.state_dict(), model_path)
     mlflow.log_artifact(model_path, 'model.pth')
+
+
+def download_latest_model(model_name, output_path, experiment_name=None):
+    """Скачать последнюю модель из MLflow"""
+    client = MlflowClient()
+    
+    exp_name = experiment_name or MLFLOW_EXPERIMENT_NAME
+    exp = mlflow.get_experiment_by_name(exp_name)
+    
+    if not exp:
+        raise ValueError(f"Experiment {exp_name} not found")
+    
+    runs = client.search_runs(exp.experiment_id, "metrics.val_accuracy DESC", max_results=1)
+    
+    if not runs:
+        raise ValueError("No runs found")
+    
+    best_run = runs[0]
+    
+    for artifact in client.list_artifacts(best_run.info.run_id, "model"):
+        if artifact.path.endswith('.pth'):
+            client.download_artifacts(
+                best_run.info.run_id,
+                artifact.path,
+                dst_path=output_path
+            )
+            return output_path
+    
+    return None

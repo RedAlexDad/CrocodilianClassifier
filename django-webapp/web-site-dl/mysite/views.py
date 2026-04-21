@@ -6,6 +6,11 @@ import onnxruntime
 import numpy as np
 from PIL import Image
 import os
+import boto3
+
+
+MLFLOW_TRACKING_URI = os.environ.get('MLFLOW_TRACKING_URI', 'http://localhost:5000')
+MLFLOW_BUCKET = 'mlflow-artifacts'
 
 # Классы по вашему варианту: крокодил, аллигатор, кайман
 imageClassList = {
@@ -13,6 +18,56 @@ imageClassList = {
     '1': 'Аллигатор',
     '2': 'Кайман'
 }
+
+def get_mlflow_models():
+    """Получить список моделей из MLflow S3"""
+    try:
+        s3 = boto3.client(
+            's3',
+            endpoint_url=settings.AWS_S3_ENDPOINT_URL,
+            aws_access_key_id='minioadmin',
+            aws_secret_access_key='minioadmin'
+        )
+        
+        response = s3.list_objects_v2(Bucket=MLFLOW_BUCKET, Prefix='models/')
+        
+        if 'Contents' not in response:
+            return []
+        
+        models = []
+        for obj in response['Contents']:
+            key = obj['Key']
+            if key.endswith('.onnx'):
+                name = key.split('/')[-1]
+                models.append({
+                    'name': name,
+                    'key': key,
+                    'size': obj['Size'],
+                    'last_modified': obj['LastModified']
+                })
+        
+        return models
+    except Exception as e:
+        print(f"Ошибка получения моделей из MLflow: {e}")
+        return []
+
+
+def download_model_from_mlflow(model_key, local_path):
+    """Скачать модель из MLflow S3"""
+    try:
+        s3 = boto3.client(
+            's3',
+            endpoint_url=settings.AWS_S3_ENDPOINT_URL,
+            aws_access_key_id='minioadmin',
+            aws_secret_access_key='minioadmin'
+        )
+        
+        s3.download_file(MLFLOW_BUCKET, model_key, local_path)
+        return True
+    except Exception as e:
+        print(f"Ошибка скачивания модели: {e}")
+        return False
+
 
 def get_available_models():
     """Получение списка доступных ONNX моделей"""
@@ -148,6 +203,42 @@ def uploadModel(request):
         'available_models': get_available_models()
     }
     return render(request, 'uploadmodel.html', context)
+
+def uploadModelFromMLflow(request):
+    """Загрузить модель из MLflow в Django"""
+    from django.contrib import messages
+    
+    if request.method == 'GET' and 'model_key' in request.GET:
+        model_key = request.GET.get('model_key')
+        
+        local_path = f'/tmp/{os.path.basename(model_key)}'
+        if download_model_from_mlflow(model_key, local_path):
+            try:
+                s3 = boto3.client(
+                    's3',
+                    endpoint_url=settings.AWS_S3_ENDPOINT_URL,
+                    aws_access_key_id='minioadmin',
+                    aws_secret_access_key='minioadmin'
+                )
+                
+                s3.upload_file(
+                    local_path,
+                    settings.AWS_STORAGE_BUCKET_NAME,
+                    f'media/models/{os.path.basename(model_key)}'
+                )
+                messages.success(request, f'Модель загружена из MLflow!')
+            except Exception as e:
+                messages.error(request, f'Ошибка: {str(e)}')
+        else:
+            messages.error(request, 'Не удалось скачать модель из MLflow')
+        
+        return redirect('scoreImagePage')
+    
+    context = {
+        'mlflow_models': get_mlflow_models()
+    }
+    return render(request, 'mlflow_models.html', context)
+
 
 def predictImageData(modelName, filePath):
     """Загрузка ONNX модели и предсказание класса изображения"""
