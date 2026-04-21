@@ -4,8 +4,9 @@ services:
     build:
       context: ./django-webapp
       dockerfile: Dockerfile
+    working_dir: /app
     volumes:
-      - .:/app
+      - ./django-webapp:/app
     ports:
       - "8000:8000"
     environment:

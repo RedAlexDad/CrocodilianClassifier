@@ -1,37 +1,39 @@
 # Makefile для домашнего задания №1
 # РНС | МГТУ им. Баумана
 # Классификация: крокодил, аллигатор, кайман
-# С поддержкой MLflow, Minio, Django
 
+# ==============================================================================
 # Переменные
+# ==============================================================================
 PYTHON ?= python3
 PIP ?= pip3
-MANAGE := django-webapp/web-site-dl/manage.py
-DOCKER_COMPOSE := docker compose -f docker-compose.yml
 DOCKER := docker
+DOCKER_COMPOSE := $(DOCKER) compose -f docker-compose.yml
 
 # Директории
 TRAINING_DIR := training
 DATA_DIR := data
 DJANGO_DIR := django-webapp
 
-# Docker compose файл
-DOCKER_COMPOSE_FILE := $(DJANGO_DIR)/docker-compose.yml
-
 # Классы датасета
 CLASSES ?= крокодил аллигатор кайман
+IMAGES_PER_CLASS ?= 100
+
+# S3
+S3_BUCKET ?= dz1-media
+S3_ENDPOINT ?= http://localhost:9000
 
 # MLflow
 MLFLOW_URI ?= http://localhost:5000
 
 # Цвета
-GREEN := \033[0;32m
-YELLOW := \033[0;33m
-BLUE := \033[0;34m
-RED := \033[0;31m
-NC := \033[0m
+GREEN  := $(shell tput setaf 2 2>/dev/null || echo "")
+YELLOW := $(shell tput setaf 3 2>/dev/null || echo "")
+BLUE   := $(shell tput setaf 4 2>/dev/null || echo "")
+RED    := $(shell tput setaf 1 2>/dev/null || echo "")
+NC     := $(shell tput sgr0 2>/dev/null || echo "")
 
-.PHONY: help install train test run-full run-django download-images
+.PHONY: help
 
 # ==============================================================================
 # Основное
@@ -39,115 +41,171 @@ NC := \033[0m
 
 help: ## Показать справку
 	@echo ""
-	@echo "Крокодилы - Makefile Справка"
+	@echo "$(BLUE)Крокодилы - Классификатор ДЗ1$(NC)"
 	@echo ""
-	@echo "Обучение:"
-	@echo "  make train model=cnn         Обучить модель (mlp|cnn|resnet20|mobilenet)"
-	@echo "  make train model=all          Обучить все модели"
+	@echo "$(GREEN)Обучение:$(NC)"
+	@echo "  $(MAKE) train [model=mlp|cnn|resnet20|mobilenet]    Обучить модель"
+	@echo "  $(MAKE) train-all                         Обучить все модели"
 	@echo ""
-	@echo "Запуск:"
-	@echo "  make full-up                Запустить все сервисы"
-	@echo "  make run-django            Запустить Django"
+	@echo "$(GREEN)Docker:$(NC)"
+	@echo "  $(MAKE) full-up                       Запустить все сервисы"
+	@echo "  $(MAKE) full-down                     Остановить все сервисы"
+	@echo "  $(MAKE) build                        Собрать Docker образ"
+	@echo "  $(MAKE) logs [service=web|mlflow|minio]  Логи сервиса"
+	@echo "  $(MAKE) clean                        Очистить контейнеры"
 	@echo ""
-	@echo "MLflow:"
-	@echo "  make mlflow-up              Запустить MLflow"
-	@echo "  make mlflow-logs            Логи MLflow"
+	@echo "$(GREEN)MLflow:$(NC)"
+	@echo "  $(MAKE) mlflow-up                     Запустить MLflow"
+	@echo "  $(MAKE) mlflow-logs                  Логи MLflow"
 	@echo ""
-	@echo "MinIO:"
-	@echo "  make minio-up              Запустить MinIO"
+	@echo "$(GREEN)MinIO:$(NC)"
+	@echo "  $(MAKE) minio-up                     Запустить MinIO"
+	@echo "  $(MAKE) minio-console                Открыть MinIO Console"
 	@echo ""
-
-install: ## Установить зависимости
-	@echo "$(GREEN)Установка зависимостей...$(NC)"
-	cd $(DJANGO_DIR) && $(PIP) install -r requirements.txt
-	cd $(TRAINING_DIR) && $(PIP) install torch torchvision mlflow
+	@echo "$(GREEN)Django:$(NC)"
+	@echo "  $(MAKE) run-django                  Запустить Django локально"
+	@echo "  $(MAKE) collectstatic               Собрать static файлы"
+	@echo ""
+	@echo "$(GREEN)Датасет:$(NC)"
+	@echo "  $(MAKE) download CLASSES='крокодил аллигатор кайман'  Скачать изображения"
+	@echo "  $(MAKE) dataset-stats                Показать статистику"
 
 # ==============================================================================
 # Обучение моделей
 # ==============================================================================
 
-train: ## Обучить модель
+train: ## Обучить модель (model=mlp|cnn|resnet20|mobilenet)
 	@echo "$(GREEN)Обучение модели: $(model)$(NC)"
 	cd $(TRAINING_DIR) && $(PYTHON) main.py --model $(model)
 
-train-mlp: ## Обучить MLP
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --model mlp
-
-train-cnn: ## Обучить CNN
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --model cnn
-
-train-resnet20: ## Обучить ResNet20
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --model resnet20
-
-train-mobilenet: ## Обучить MobileNetV2
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --model mobilenet
+-train: ## Обучить модель с выбором оптимизатора
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --model $(model) --optimizer $(optimizer)
 
 train-all: ## Обучить все модели
 	@echo "$(GREEN)Обучение всех моделей...$(NC)"
 	cd $(TRAINING_DIR) && $(PYTHON) main.py --model all
 
+train-compared: ## Сравнить все оптимизаторы
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --model all --compare-optimizers
+
 # ==============================================================================
-# Docker и сервисы
+# Docker Compose
 # ==============================================================================
 
 full-up: ## Запустить все сервисы (Django + MinIO + MLflow)
 	@echo "$(GREEN)Запуск всех сервисов...$(NC)"
 	$(DOCKER_COMPOSE) up -d
-	@sleep 5
-	@echo "$(GREEN)Сервисы запущены!$(NC)"
-	@echo "$(YELLOW)Django: http://localhost:8000$(NC)"
-	@echo "$(YELLOW)MinIO API: http://localhost:9000$(NC)"
+	@sleep 10
+	@echo ""
+	@echo "$(GREEN)Сервисы запущены:$(NC)"
+	@echo "$(YELLOW)Django:      http://localhost:8000$(NC)"
+	@echo "$(YELLOW)MinIO API:   http://localhost:9000$(NC)"
 	@echo "$(YELLOW)MinIO Console: http://localhost:9001$(NC)"
-	@echo "$(YELLOW)MLflow: http://localhost:5000$(NC)"
+	@echo "$(YELLOW)MLflow:      http://localhost:5000$(NC)"
 
 full-down: ## Остановить все сервисы
 	@echo "$(GREEN)Остановка сервисов...$(NC)"
 	$(DOCKER_COMPOSE) down
 
-mlflow-up: ## Запустить MLflow
+full-restart: ## Перезапустить все сервисы
+	$(MAKE) full-down
+	$(MAKE) full-up
+
+build: ## Собрать Docker образ
+	@echo "$(GREEN)Сборка Docker образа...$(NC)"
+	$(DOCKER_COMPOSE) build --no-cache
+
+logs: ## Логи сервиса (service=web|mlflow|minio)
+	$(DOCKER_COMPOSE) logs -f $(service)
+
+clean: ## Очистить Docker ресурсы
+	@echo "$(YELLOW)Очистка...$(NC)"
+	$(DOCKER_COMPOSE) down -v
+	$(DOCKER) system prune -f
+
+# ==============================================================================
+# MLflow
+# ==============================================================================
+
+mlflow-up: ## Запустить MLflow сервер
 	@echo "$(GREEN)Запуск MLflow...$(NC)"
-	$(DOCKER_COMPOSE) up -d mlflow
+	$(DOCKER_COMPOSE) up -d mlflow minio minio-init
 	@echo "$(YELLOW)MLflow: http://localhost:5000$(NC)"
 
 mlflow-logs: ## Логи MLflow
 	$(DOCKER_COMPOSE) logs -f mlflow
 
+# ==============================================================================
+# MinIO
+# ==============================================================================
+
 minio-up: ## Запустить MinIO
 	@echo "$(GREEN)Запуск MinIO...$(NC)"
 	$(DOCKER_COMPOSE) up -d minio minio-init
-	@echo "$(YELLOW)MinIO API: http://localhost:9000$(NC)"
+	@echo "$(YELLOW)MinIO API:   http://localhost:9000$(NC)"
 	@echo "$(YELLOW)MinIO Console: http://localhost:9001$(NC)"
 
-run-django: ## Запустить Django
+minio-console: ## MinIO Console
+	@echo "$(BLUE)Открытие MinIO Console...$(NC)"
+	@xdg-open http://localhost:9001 || echo "Откройте http://localhost:9001"
+
+# ==============================================================================
+# Django
+# ==============================================================================
+
+run-django: ## Запустить Django локально
 	@echo "$(GREEN)Запуск Django...$(NC)"
-	cd $(DJANGO_DIR) && $(MANAGE) runserver
+	cd $(DJANGO_DIR)/web-site-dl && $(PYTHON) manage.py runserver
 
-docker-build: ## Собрать Docker образ
-	$(DOCKER_COMPOSE) build
+collectstatic: ## Собрать static файлы
+	cd $(DJANGO_DIR)/web-site-dl && $(PYTHON) manage.py collectstatic --noinput
 
-docker-rebuild: ## Пересобрать и запустить
-	$(DOCKER_COMPOSE) up -d --build
+migrate: ## Миграции БД
+	cd $(DJANGO_DIR)/web-site-dl && $(PYTHON) manage.py migrate
 
-docker-logs: ## Логи
-	$(DOCKER_COMPOSE) logs -f
-
-docker-clean: ## Очистить
-	$(DOCKER_COMPOSE) down -v
+shell: ## Django shell
+	cd $(DJANGO_DIR)/web-site-dl && $(PYTHON) manage.py shell
 
 # ==============================================================================
 # Датасет
 # ==============================================================================
 
-download-images: ## Скачать изображения
+download: ## Скачать изображения (CLASSES='крокодил аллигатор кайман')
 	@echo "$(GREEN)Скачивание изображений...$(NC)"
-	$(PYTHON) download_images.py --classes "$(CLASSES)"
+	$(PYTHON) download_images.py --classes $(CLASSES) --limit $(IMAGES_PER_CLASS)
 
-dataset-stats: ## Показать статистику датасета
+dataset-stats: ## Статистика датасета
 	@echo "$(GREEN)Статистика датасета:$(NC)"
 	@for class in $(CLASSES); do \
 		count=$$(ls $(DATA_DIR)/$$class/*.jpeg 2>/dev/null | wc -l); \
 		echo "  $$class: $$count изображений"; \
 	done
+
+# ==============================================================================
+# Установка
+# ==============================================================================
+
+install: ## Установить зависимости
+	@echo "$(GREEN)Установка зависимостей...$(NC)"
+	$(PIP) install -r $(DJANGO_DIR)/requirements.txt
+	$(PIP) install torch torchvision mlflow
+
+install-dev: ## Зависимости для разработки
+	$(MAKE) install
+	$(PIP) install black flake8 mypy
+
+# ==============================================================================
+# Тестирование
+# ==============================================================================
+
+test: ## Запустить тесты
+	cd $(DJANGO_DIR)/web-site-dl && $(PYTHON) manage.py test
+
+lint: ## Проверка кода
+	@command -v flake8 >/dev/null 2>&1 && cd . && flake8 . --ignore=E501,W503 || echo "flake8 не установлен"
+
+format: ## Форматировать код
+	@command -v black >/dev/null 2>&1 && black . || echo "black не установлен"
 
 # ==============================================================================
 # По умолчанию

@@ -9,12 +9,13 @@ RUN apt-get update && apt-get install -y \
 # Рабочая директория
 WORKDIR /app
 
-# Копирование и установка только необходимых зависимостей для Django
-COPY requirements-django.txt .
-RUN pip install --no-cache-dir -r requirements-django.txt
+# Копирование зависимостей
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Копирование проекта
-COPY . .
+# Копирование Django проекта
+COPY web-site-dl/ ./web-site-dl/
+COPY mysite/ ./mysite/
 
 # Создание папок media
 RUN mkdir -p media/images media/models
