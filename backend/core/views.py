@@ -3,6 +3,7 @@ from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 import onnxruntime
 import numpy as np
 from PIL import Image
@@ -95,6 +96,7 @@ def get_models_api(request):
     return JsonResponse({"models": models})
 
 
+@csrf_exempt
 def download_mlflow_model_api(request):
     """API: скачать модель из MLflow и сохранить в Django"""
     if request.method != "POST":
@@ -424,6 +426,7 @@ def predictImageData(modelName, filePath):
         return f"Ошибка: {str(e)}"
 
 
+@csrf_exempt
 def model_upload_api(request):
     """API для загрузки модели через frontend"""
     from django.http import JsonResponse
@@ -460,6 +463,7 @@ def model_upload_api(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 
+@csrf_exempt
 def model_delete_api(request):
     """API для удаления модели"""
     from django.http import JsonResponse
