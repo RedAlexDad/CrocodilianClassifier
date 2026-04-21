@@ -54,6 +54,6 @@ class MinioMediaStorage(S3Boto3Storage):
                 if key.endswith(".onnx") and "/" not in key:
                     models.append(key)
 
-            return models if models else ["cifar100.onnx"]
+            return models
         except Exception:
-            return ["cifar100.onnx"]
+            return []

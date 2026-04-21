@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, useRef } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Loader2 } from 'lucide-react';
 import type { RootState } from '@/app/store/store';
@@ -17,7 +17,7 @@ export function ClassifierWidget() {
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [availableModels, setAvailableModels] = useState<string[]>([]);
-  const modelSelectRef = useRef<HTMLSelectElement>(null);
+  const [selectedModel, setSelectedModel] = useState('');
 
   const loadModels = useCallback(() => {
     fetch('/api/models')
@@ -41,6 +41,16 @@ export function ClassifierWidget() {
     loadModels();
   }, [loadModels]);
 
+  useEffect(() => {
+    if (availableModels.length === 0) {
+      setSelectedModel('');
+      return;
+    }
+    setSelectedModel(prev =>
+      prev && availableModels.includes(prev) ? prev : availableModels[0]
+    );
+  }, [availableModels]);
+
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -56,34 +66,37 @@ export function ClassifierWidget() {
   const handleSubmit = useCallback(async () => {
     if (!selectedFile) return;
 
+    const modelToSend = selectedModel || availableModels[0] || '';
+    if (!modelToSend) {
+      dispatch({
+        type: 'classifier/classify/rejected',
+        payload: { message: 'Нет доступных моделей' },
+      });
+      return;
+    }
+
     const formData = new FormData();
     formData.append('filePath', selectedFile);
-    const modelName =
-      modelSelectRef.current?.value ||
-      availableModels[0] ||
-      '';
-    if (modelName) {
-      formData.append('modelName', modelName);
-    }
+    formData.append('modelName', modelToSend);
 
     dispatch({ type: 'classifier/classify/pending' });
 
     try {
       const response = await fetch('/predictImage', {
         method: 'POST',
-        headers: {
-          Accept: 'application/json',
-        },
         body: formData,
       });
-      const data = await response.json();
+
       if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
         dispatch({
           type: 'classifier/classify/rejected',
           payload: { message: data.error || `Ошибка ${response.status}` },
         });
         return;
       }
+
+      const data = await response.json();
       dispatch({
         type: 'classifier/classify/fulfilled',
         payload: data,
@@ -94,7 +107,7 @@ export function ClassifierWidget() {
         payload: { message: (err as Error).message || 'Ошибка классификации' },
       });
     }
-  }, [dispatch, selectedFile, availableModels]);
+  }, [dispatch, selectedFile, availableModels, selectedModel]);
 
   const handleClear = useCallback(() => {
     setSelectedFile(null);
@@ -123,7 +136,11 @@ export function ClassifierWidget() {
               <p>⚠️ Нет доступных моделей. Загрузите модель через <a href="/models">Управление моделями</a></p>
             </div>
           ) : (
-            <select ref={modelSelectRef} name="modelName">
+            <select
+              name="modelName"
+              value={selectedModel}
+              onChange={e => setSelectedModel(e.target.value)}
+            >
               {availableModels.map(name => (
                 <option key={name} value={name}>{name}</option>
               ))}
@@ -151,9 +168,9 @@ export function ClassifierWidget() {
 
         {prediction && (
           <div className="result">
-            {imageUrl && (
+            {prediction.image_url && (
               <img
-                src={imageUrl}
+                src={prediction.image_url}
                 alt="Загруженное изображение"
                 className="result-image"
               />

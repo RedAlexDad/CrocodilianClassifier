@@ -184,6 +184,18 @@ make dataset-stats
 4. Test inference: Upload images via frontend at `http://localhost:5173`
 5. View logs: `make logs service=<service_name>`
 
+## Git: сообщения коммитов
+
+Правила на русском для Cursor: `.cursor/rules/format-commit.mdc`.
+
+Шаблон для редактора при `git commit`: файл `.gitmessage` в корне репозитория. Подключить один раз в клоне:
+
+```bash
+make git-template
+```
+
+или `git config commit.template /абсолютный/путь/к/репозиторию/.gitmessage`.
+
 ## File Locations
 
 - Trained model checkpoints: `checkpoints/*.pth`

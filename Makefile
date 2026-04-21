@@ -33,7 +33,7 @@ BLUE   := $(shell tput setaf 4 2>/dev/null || echo "")
 RED    := $(shell tput setaf 1 2>/dev/null || echo "")
 NC     := $(shell tput sgr0 2>/dev/null || echo "")
 
-.PHONY: help
+.PHONY: help git-template
 
 # ==============================================================================
 # Параметры обучения (можно переопределить через переменные)
@@ -100,6 +100,9 @@ help: ## Показать справку
 	@echo "$(GREEN)Датасет:$(NC)"
 	@echo "  $(MAKE) download CLASSES='крокодил аллигатор кайман'  Скачать изображения"
 	@echo "  $(MAKE) dataset-stats                Показать статистику"
+	@echo ""
+	@echo "$(GREEN)Git:$(NC)"
+	@echo "  $(MAKE) git-template                 Подключить шаблон сообщения коммита"
 
 # ==============================================================================
 # Обучение моделей
@@ -250,6 +253,10 @@ mlflow-logs: ## Логи mlflow
 minio-logs: ## Логи minio
 	$(DOCKER_COMPOSE) logs -f minio
 
+git-template: ## Подключить шаблон сообщения коммита (.gitmessage)
+	@git config commit.template "$(CURDIR)/.gitmessage"
+	@echo "$(GREEN)commit.template -> $(CURDIR)/.gitmessage$(NC)"
+
 clean: ## Очистить Docker ресурсы
 	@echo "$(YELLOW)Очистка...$(NC)"
 	$(DOCKER_COMPOSE) down -v
@@ -263,9 +270,6 @@ mlflow-up: ## Запустить MLflow сервер
 	@echo "$(GREEN)Запуск MLflow...$(NC)"
 	$(DOCKER_COMPOSE) up -d mlflow minio minio-init
 	@echo "$(YELLOW)MLflow: http://localhost:5000$(NC)"
-
-mlflow-logs: ## Логи MLflow
-	$(DOCKER_COMPOSE) logs -f mlflow
 
 # ==============================================================================
 # MLflow модели

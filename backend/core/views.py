@@ -16,6 +16,9 @@ MLFLOW_BUCKET = "crocodilian-artifacts"
 # Классы по вашему варианту: крокодил, аллигатор, кайман
 imageClassList = {"0": "Крокодил", "1": "Аллигатор", "2": "Кайман"}
 
+# Учебный плейсхолдер из старых инструкций: в S3 часто лежит только .onnx без .onnx.data
+DEPRIORITIZED_AUTO_MODELS = frozenset({"cifar100.onnx"})
+
 
 def get_mlflow_models():
     """Получить список моделей из MLflow S3"""
@@ -203,11 +206,32 @@ def get_available_models():
         return models
 
 
+def pick_model_for_request(request):
+    """Имя .onnx из POST, если файл есть в хранилище; иначе первая подходящая модель."""
+    posted = (request.POST.get("modelName") or "").strip()
+    available = get_available_models()
+    if posted in available:
+        return posted
+    return _autopick_model_name(available)
+
+
+def _autopick_model_name(available):
+    """Автовыбор: не брать устаревший cifar100, если в бакете есть другие модели."""
+    if not available:
+        return ""
+    preferred = [m for m in available if m not in DEPRIORITIZED_AUTO_MODELS]
+    pool = preferred if preferred else list(available)
+    return sorted(pool)[0]
+
+
 def scoreImagePage(request):
     """Отображение страницы классификации"""
+    available = get_available_models()
+    posted = (request.POST.get("modelName") or "").strip()
+    current = posted if posted in available else _autopick_model_name(available)
     context = {
-        "available_models": get_available_models(),
-        "current_model": request.POST.get("modelName", "cifar100.onnx"),
+        "available_models": available,
+        "current_model": current,
     }
     return render(request, "scorepage.html", context)
 
@@ -215,9 +239,12 @@ def scoreImagePage(request):
 @csrf_exempt
 def predictImage(request):
     """Обработка загруженного изображения и предсказание"""
-    if request.method == "POST" and "filePath" in request.FILES:
-        fileObj = request.FILES["filePath"]
+    if request.method != "POST":
+        return redirect("scoreImagePage")
 
+    # HTML-форма использует filePath; SPA может слать file — принимаем оба ключа.
+    fileObj = request.FILES.get("filePath") or request.FILES.get("file")
+    if fileObj:
         # Сохранение файла с использованием default_storage (S3 или локальное)
         # default_storage уже имеет location='media', поэтому сохраняем просто в 'images/'
         file_path = f"images/{fileObj.name}"
@@ -226,8 +253,26 @@ def predictImage(request):
         # Получаем URL через хранилище (для S3 будет http://localhost:19000/crocodilian/media/images/...)
         file_url = default_storage.url(saved_path)
 
-        # Получение имени модели (если выбрано)
-        modelName = request.POST.get("modelName", "cifar100.onnx")
+        modelName = pick_model_for_request(request)
+        if not modelName:
+            err = (
+                "Нет ONNX-моделей в хранилище. Загрузите модель на странице «Управление моделями»."
+            )
+            if request.accepts("application/json"):
+                return JsonResponse(
+                    {"error": err, "image_url": file_url, "current_model": ""},
+                    status=400,
+                )
+            return render(
+                request,
+                "scorepage.html",
+                {
+                    "scorePrediction": err,
+                    "image_url": file_url,
+                    "available_models": [],
+                    "current_model": "",
+                },
+            )
 
         # Предсказание
         scorePrediction = predictImageData(modelName, saved_path)
@@ -248,8 +293,11 @@ def predictImage(request):
             )
         return render(request, "scorepage.html", context)
 
-    if request.method == "POST" and request.accepts("application/json"):
-        return JsonResponse({"error": "filePath required"}, status=400)
+    if request.accepts("application/json"):
+        return JsonResponse(
+            {"error": "Загрузите изображение (поле filePath или file)."},
+            status=400,
+        )
 
     return redirect("scoreImagePage")
 
@@ -360,8 +408,12 @@ def predictImageData(modelName, filePath):
     import os
     import shutil
     import onnx
+    from onnx.external_data_helper import load_external_data_for_model
 
     try:
+        if not modelName:
+            return "Ошибка: модель не выбрана"
+
         # Загрузка и предобработка изображения
         img = Image.open(default_storage.open(filePath)).convert("RGB")
         img = img.resize((32, 32), Image.LANCZOS)
@@ -369,7 +421,6 @@ def predictImageData(modelName, filePath):
 
         # Загрузка модели из S3
         storage = default_storage
-        model_key = f"media/models/{modelName}"
         model_base_name = modelName.replace(".onnx", "")
 
         # Создаём временную директорию для модели
@@ -391,13 +442,35 @@ def predictImageData(modelName, filePath):
 
             # Путь к основному файлу модели
             tmp_model_path = os.path.join(tmp_dir, modelName)
+            if not os.path.isfile(tmp_model_path):
+                return f"Ошибка: модель «{modelName}» не найдена в хранилище"
 
-            # Проверка формата входов модели
-            onnx_model = onnx.load(tmp_model_path)
+            # Без внешних весов — только структура графа (иначе onnx.load требует .data на диске)
+            onnx_model = onnx.load(tmp_model_path, load_external_data=False)
             input_shape = [
                 d.dim_value if d.dim_value != 0 else -1
                 for d in onnx_model.graph.input[0].type.tensor_type.shape.dim
             ]
+
+            # Подтягиваем внешние тензоры из tmp_dir в protobuf (один буфер для ORT)
+            try:
+                load_external_data_for_model(onnx_model, base_dir=tmp_dir)
+                ort_bytes = onnx_model.SerializeToString()
+                sess = onnxruntime.InferenceSession(
+                    ort_bytes, providers=["CPUExecutionProvider"]
+                )
+            except Exception as ext_err:
+                try:
+                    sess = onnxruntime.InferenceSession(
+                        tmp_model_path, providers=["CPUExecutionProvider"]
+                    )
+                except Exception:
+                    return (
+                        "Ошибка: не удалось загрузить веса модели "
+                        f"«{modelName}» (внешние данные ONNX). "
+                        f"Загрузите в хранилище пару .onnx и .onnx.data или одну самодостаточную "
+                        f"модель. Детали: {ext_err}"
+                    )
 
             # Определение формата: NCHW или NHWC
             # NCHW: [batch, 3, 32, 32] - каналы на позиции 1
@@ -421,11 +494,8 @@ def predictImageData(modelName, filePath):
             elif len(img.shape) == 1:
                 img = np.expand_dims(img, axis=0)
 
-            # Запуск ONNX сессии
-            sess = onnxruntime.InferenceSession(tmp_model_path)
-
-            # Предсказание
-            outputOfModel = sess.run(None, {"input": img})
+            input_name = sess.get_inputs()[0].name
+            outputOfModel = sess.run(None, {input_name: img})
             outputOfModel = np.argmax(outputOfModel[0])
 
             score = imageClassList[str(outputOfModel)]
