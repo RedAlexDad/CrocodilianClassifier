@@ -27,9 +27,43 @@
 
 .model-management input[type="file"] {
   flex: 1;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 12px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.model-management input[type="file"]:hover {
+  border-color: #4f46e5;
+  background: #f3f4f6;
+}
+
+.model-management form button[type="submit"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.model-management form button[type="submit"]:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.model-management form button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #9ca3af;
 }
 
 .models-table {
