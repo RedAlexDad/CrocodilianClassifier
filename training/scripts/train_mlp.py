@@ -13,6 +13,21 @@ from utils import (
 )
 
 
+def get_optimizer(name: str, params, lr: float, weight_decay: float = 1e-4, momentum: float = 0.9):
+    """Создать оптимизатор"""
+    name = name.lower()
+    if name == 'adam':
+        return optim.Adam(params, lr=lr, weight_decay=weight_decay)
+    elif name == 'adagrad':
+        return optim.Adagrad(params, lr=lr, weight_decay=weight_decay)
+    elif name == 'rmsprop':
+        return optim.RMSprop(params, lr=lr, weight_decay=weight_decay, momentum=momentum)
+    elif name == 'sgd':
+        return optim.SGD(params, lr=lr, momentum=momentum, weight_decay=weight_decay)
+    else:
+        raise ValueError(f"Неизвестный оптимизатор: {name}")
+
+
 def train_mlp(optimizer_name='adam', seed=42, epochs=None, lr=None):
     """Обучение MLP модели"""
     print("\n" + "="*60)

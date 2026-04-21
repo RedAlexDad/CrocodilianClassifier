@@ -39,6 +39,8 @@ def main():
 
     for model_type in models_to_train:
         trainer = get_model_trainer(model_type)
+        if trainer is None:
+            raise ValueError(f"Неизвестная модель: {model_type}")
 
         if args.compare_optimizers:
             optimizers = get_available_optimizers(model_type)

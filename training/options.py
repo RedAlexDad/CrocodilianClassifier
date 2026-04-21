@@ -47,33 +47,33 @@ DEFAULT_OPTIMIZER = 'adam'
 DEFAULT_MODEL = 'all'
 
 
-def get_model_config(model_type):
+def get_model_config(model_type: str) -> dict | None:
     """Получить конфигурацию модели"""
     return MODEL_CONFIGS.get(model_type)
 
 
-def get_model_trainer(model_type):
-    """Получить функцию обучения для модели"""
-    config = get_model_config(model_type)
-    return config['trainer'] if config else None
-
-
-def get_default_optimizer(model_type):
+def get_default_optimizer(model_type: str) -> str:
     """Получить оптимизатор по умолчанию для модели"""
     config = get_model_config(model_type)
-    return config['default_optimizer'] if config else DEFAULT_OPTIMIZER
+    if config is None:
+        return DEFAULT_OPTIMIZER
+    return config['default_optimizer']
 
 
-def get_available_optimizers(model_type):
+def get_available_optimizers(model_type: str) -> list:
     """Получить доступные оптимизаторы для модели"""
     config = get_model_config(model_type)
-    return config['available_optimizers'] if config else OPTIMIZERS
+    if config is None:
+        return OPTIMIZERS
+    return config['available_optimizers']
 
 
-def get_model_description(model_type):
+def get_model_description(model_type: str) -> str:
     """Получить описание модели"""
     config = get_model_config(model_type)
-    return config['description'] if config else ''
+    if config is None:
+        return ''
+    return config['description']
 
 
 def print_summary(results):

@@ -15,7 +15,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Копирование Django проекта
 COPY web-site-dl/ ./web-site-dl/
-COPY mysite/ ./mysite/
 
 # Создание папок media
 RUN mkdir -p media/images media/models
