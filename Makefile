@@ -249,6 +249,36 @@ mlflow-logs: ## Логи MLflow
 	$(DOCKER_COMPOSE) logs -f mlflow
 
 # ==============================================================================
+# MLflow модели
+# ==============================================================================
+
+MLRUNS_DIR := mlruns
+
+list-mlflow-runs: ## Показать все запуски MLflow
+	@echo "$(GREEN)Запуски MLflow:${NC}"
+	@python3 scripts/list_mlflow_runs.py
+
+add-mlflow-model: ## Добавить модель MLflow в репозиторий (требуется RUN_ID)
+ifndef RUN_ID
+	@echo "$(RED)Ошибка: необходимо указать RUN_ID${NC}"
+	@echo "Использование: $(GREEN)make add-mlflow-model RUN_ID=<run_id>${NC}"
+	@echo ""
+	@$(MAKE) list-mlflow-runs
+	@exit 1
+endif
+	@echo "$(GREEN)Добавление модели $(RUN_ID) в репозиторий...${NC}"
+	@mkdir -p $(MLRUNS_DIR)/$(RUN_ID)/artifacts
+	@python3 scripts/download_mlflow_artifacts.py \
+		"1" "$(RUN_ID)" \
+		"$(MLRUNS_DIR)/$(RUN_ID)/artifacts"
+	@echo ""
+	@echo "$(GREEN)✓ Модель добавлена!${NC}"
+	@echo "$(CYAN)Следующие шаги:${NC}"
+	@echo "  1. $(GREEN)git add $(MLRUNS_DIR)/$(RUN_ID)/${NC}"
+	@echo "  2. $(GREEN)git commit -m 'feat: добавить модель $(RUN_ID)'${NC}"
+	@echo "  3. $(GREEN)git push${NC}"
+
+# ==============================================================================
 # MinIO
 # ==============================================================================
 
