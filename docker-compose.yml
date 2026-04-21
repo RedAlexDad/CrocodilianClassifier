@@ -9,12 +9,12 @@ services:
     environment:
       - VITE_API_URL=http://localhost:8000
     depends_on:
-      - web
+      - backend
     networks:
       - app-network
 
-  # Django веб-приложение
-  web:
+  # Django backend
+  backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
