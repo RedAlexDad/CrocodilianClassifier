@@ -10,14 +10,20 @@ function App() {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <div className="app">
-          <header className="header">
-            <h1>Крокодилы 🐊</h1>
-            <p>Классификатор: крокодил, аллигатор, кайман</p>
-          </header>
-          <main>
-            <ClassifierWidget />
-          </main>
+        <div className="fixed-header">
+          <div className="container">
+            <div className="header-title">Классификатор: крокодил, аллигатор, кайман</div>
+          </div>
+        </div>
+
+        <div className="container">
+          <ClassifierWidget />
+        </div>
+
+        <div className="fixed-footer">
+          <div className="container">
+            Домашнее задание №1 - Классификация изображений
+          </div>
         </div>
       </QueryClientProvider>
     </Provider>

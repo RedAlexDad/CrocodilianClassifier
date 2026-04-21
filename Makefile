@@ -124,9 +124,6 @@ train-all: ## Обучить все модели
 	@echo "$(GREEN)Обучение всех моделей...$(NC)"
 	cd $(TRAINING_DIR) && $(PYTHON) main.py --model all
 
-train-compared: ## Сравнить все оптимизаторы
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --model all --compare-optimizers
-
 # ==============================================================================
 # Shortcut команды для обучения (используют переменные above)
 # ==============================================================================
@@ -170,9 +167,44 @@ full-restart: ## Перезапустить все сервисы
 	$(MAKE) full-down
 	$(MAKE) full-up
 
-build: ## Собрать Docker образ
+build: ## Собрать Docker образ (с кэшем)
 	@echo "$(GREEN)Сборка Docker образа...$(NC)"
+	$(DOCKER_COMPOSE) build
+
+build-no-cache: ## Собрать Docker образ без кэша
+	@echo "$(GREEN)Сборка Docker образа (без кэша)...$(NC)"
 	$(DOCKER_COMPOSE) build --no-cache
+
+rebuild: ## Пересобрать Docker образ (сначала остановить, затем собрать)
+	@echo "$(GREEN)Пересборка Docker образа...$(NC)"
+	$(DOCKER_COMPOSE) down --remove-orphans
+	$(DOCKER_COMPOSE) build
+	$(DOCKER_COMPOSE) up -d
+
+deploy: ## Пересобрать и запустить все сервисы
+	@echo "$(GREEN)Деплой...$(NC)"
+	$(DOCKER_COMPOSE) down --remove-orphans
+	$(DOCKER_COMPOSE) build
+	$(DOCKER_COMPOSE) up -d
+	@sleep 5
+	@echo "$(GREEN)Деплой завершен!$(NC)"
+	@echo "$(YELLOW)Frontend:   http://localhost:5173$(NC)"
+	@echo "$(YELLOW)Django:      http://localhost:8000$(NC)"
+	@echo "$(YELLOW)MinIO API:   http://localhost:9000$(NC)"
+	@echo "$(YELLOW)MinIO Console: http://localhost:9001$(NC)"
+	@echo "$(YELLOW)MLflow:      http://localhost:5000$(NC)"
+
+# ==============================================================================
+# Frontend
+# ==============================================================================
+
+frontend-build: ## Собрать Frontend
+	@echo "$(GREEN)Сборка Frontend...$(NC)"
+	cd frontend && node /home/redalexdad/.npm-global/node_modules/vite/bin/vite.js build
+
+frontend-dev: ## Запустить Frontend в режиме разработки
+	@echo "$(GREEN)Запуск Frontend...$(NC)"
+	cd frontend && node /home/redalexdad/.npm-global/node_modules/vite/bin/vite.js
 
 logs: ## Логи сервиса (service=web|mlflow|minio)
 	$(DOCKER_COMPOSE) logs -f $(service)
