@@ -130,7 +130,7 @@ def create_dataloaders(train_X, train_y, test_X, test_y, config, model_type="cnn
     Args:
         train_X, train_y, test_X, test_y: Данные
         config: Конфигурация
-        model_type: Тип модели ('mlp', 'cnn', 'mobilenet')
+        model_type: Тип модели ('mlp', 'cnn', 'mobilenet', 'resnet20')
 
     Returns:
         dataloader: dict с 'train' и 'test' DataLoader
@@ -171,8 +171,8 @@ def create_dataloaders(train_X, train_y, test_X, test_y, config, model_type="cnn
         train_dataset = AugmentedDataset(train_X, train_y, transform=train_transform)
         test_dataset = AugmentedDataset(test_X, test_y, transform=test_transform)
 
-    elif model_type == "mobilenet":
-        # MobileNet требует размер 224x224 и нормализацию ImageNet
+    elif model_type in ("mobilenet", "resnet20"):
+        # MobileNet/ResNet20 требует размер 224x224 и нормализацию ImageNet
         mean = getattr(config, "IMAGENET_MEAN", [0.485, 0.456, 0.406])
         std = getattr(config, "IMAGENET_STD", [0.229, 0.224, 0.225])
         image_size = getattr(config, "IMAGE_SIZE", 224)

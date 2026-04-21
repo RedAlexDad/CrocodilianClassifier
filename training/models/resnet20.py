@@ -1,5 +1,5 @@
 """
-ResNet20 модель для классификации изображений
+ResNet18 модель для классификации изображений
 Transfer Learning с предобученными весами ImageNet
 """
 
@@ -10,19 +10,19 @@ from torchvision import models
 
 class ResNet20Model(nn.Module):
     """
-    ResNet20 с Transfer Learning
+    ResNet18 с Transfer Learning
 
     Архитектура:
-        ResNet20 Backbone (ImageNet weights) ->
+        ResNet18 Backbone (ImageNet weights) ->
         Dropout -> Linear (num_classes)
     """
 
     def __init__(self, num_classes=3, pretrained=True, dropout=0.3):
         super(ResNet20Model, self).__init__()
 
-        # Загрузка предобученной модели ResNet20
-        weights = models.ResNet20_Weights.IMAGENET1K_V1 if pretrained else None
-        self.backbone = models.resnet20(weights=weights)
+        # Загрузка предобученной модели ResNet18
+        weights = models.ResNet18_Weights.IMAGENET1K_V1 if pretrained else None
+        self.backbone = models.resnet18(weights=weights)
 
         # Замена классификатора
         in_features = self.backbone.fc.in_features

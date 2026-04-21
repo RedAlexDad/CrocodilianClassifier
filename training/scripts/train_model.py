@@ -3,23 +3,16 @@
 Обучение любой модели (CNN, MLP, ResNet20, MobileNetV2)
 """
 import argparse
+from typing import Optional
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from configs import CNNConfig, MLPConfig, ResNetConfig, MobileNetConfig
-from models import CNNModel, MLPModel, ResNetModel, MobileNetModel
-from utils import (
-    setup_mlflow,
-    log_params,
-    load_data,
-    create_dataloaders,
-    Trainer,
-    export_to_onnx,
-    get_device,
-    set_seed,
-    validate,
-    print_classification_report,
-)
+from configs import CNNConfig, MLPConfig, MobileNetConfig, ResNetConfig
+from models import CNNModel, MLPModel, MobileNetModel, ResNet20Model
+from utils import (Trainer, create_dataloaders, export_to_onnx, get_device,
+                   load_data, log_params, print_classification_report,
+                   set_seed, setup_mlflow, validate)
 
 
 def get_optimizer(name: str, params, lr: float, weight_decay: float = 1e-4, momentum: float = 0.9):
@@ -40,7 +33,7 @@ def get_optimizer(name: str, params, lr: float, weight_decay: float = 1e-4, mome
 MODEL_CONFIGS = {
     "cnn": {"class": CNNModel, "config": CNNConfig, "image_size": 32},
     "mlp": {"class": MLPModel, "config": MLPConfig, "image_size": 32},
-    "resnet20": {"class": ResNetModel, "config": ResNetConfig, "image_size": 224},
+    "resnet20": {"class": ResNet20Model, "config": ResNetConfig, "image_size": 224},
     "mobilenet": {"class": MobileNetModel, "config": MobileNetConfig, "image_size": 224},
 }
 
@@ -49,11 +42,11 @@ def train_model(
     model_name: str = "cnn",
     optimizer_name: str = "sgd",
     seed: int = 42,
-    epochs: int = None,
-    lr: float = None,
-    epochs_stage1: int = None,
-    finetune_layers: int = None,
-    lr_finetune: float = None,
+    epochs: Optional[int] = None,
+    lr: Optional[float] = None,
+    epochs_stage1: Optional[int] = None,
+    finetune_layers: Optional[int] = None,
+    lr_finetune: Optional[float] = None,
 ):
     """Обучение модели"""
     model_name = model_name.lower()
@@ -112,7 +105,7 @@ def train_model(
                 dropout=config.DROPOUT,
             ).to(device)
         elif model_name == "resnet20":
-            model = model_class(num_classes=len(config.CLASSES)).to(device)
+            model = model_class(num_classes=len(config.CLASSES), pretrained=config.PRETRAINED).to(device)
         elif model_name == "mobilenet":
             model = model_class(num_classes=len(config.CLASSES), pretrained=config.PRETRAINED).to(device)
 
