@@ -33,10 +33,10 @@ def train_mobilenet(
     device = get_device()
     set_seed(seed)
 
-    # MLflow with named run
+    # MLflow with single experiment for all models
     import mlflow
-    setup_mlflow(experiment_name="MobileNetV2")
-    run_name = f"MobileNetV2_{optimizer_name}"
+    setup_mlflow(experiment_name="crocodilian_classifier")
+    run_name = f"mobilenet_{optimizer_name}_s{seed}"
 
     with mlflow.start_run(run_name=run_name):
         log_params({

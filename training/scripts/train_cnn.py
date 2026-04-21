@@ -33,10 +33,10 @@ def train_cnn(optimizer_name="sgd", seed=42, epochs=None, lr=None):
     device = get_device()
     set_seed(seed)
 
-    # MLflow setup with named run
+    # MLflow setup with single experiment for all models
     import mlflow
-    setup_mlflow(experiment_name="CNN")
-    run_name = f"CNN_{optimizer_name}_e{epochs or config.EPOCHS}"
+    setup_mlflow(experiment_name="crocodilian_classifier")
+    run_name = f"cnn_{optimizer_name}_e{epochs or config.EPOCHS}_s{seed}"
 
     with mlflow.start_run(run_name=run_name):
         log_params({

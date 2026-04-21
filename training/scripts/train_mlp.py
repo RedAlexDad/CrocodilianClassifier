@@ -47,10 +47,10 @@ def train_mlp(optimizer_name="adam", seed=42, epochs=None, lr=None):
     device = get_device()
     set_seed(seed)
 
-    # MLflow with named run
+    # MLflow with single experiment for all models
     import mlflow
-    setup_mlflow(experiment_name="MLP")
-    run_name = f"MLP_{optimizer_name}_e{epochs or config.EPOCHS}"
+    setup_mlflow(experiment_name="crocodilian_classifier")
+    run_name = f"mlp_{optimizer_name}_e{epochs or config.EPOCHS}_s{seed}"
 
     with mlflow.start_run(run_name=run_name):
         log_params({
