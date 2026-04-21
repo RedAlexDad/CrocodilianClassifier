@@ -31,12 +31,12 @@ CrocodilianClassifier/
 # Обучение моделей
 python training/main.py --model mlp           # MLP модель
 python training/main.py --model cnn           # CNN модель
-python training/main.py --model mobilenet     # MobileNetV2 (transfer learning)
+python training/main.py --model resnet20     # ResNet20 (transfer learning)
 python training/main.py --model all         # Все модели
 
 # С оптимизатором
 python training/main.py --model cnn --optimizer sgd
-python training/main.py --model mobilenet --optimizer adam
+python training/main.py --model resnet20 --optimizer adam
 
 # Запуск Django
 cd django-webapp && python manage.py runserver
@@ -60,7 +60,7 @@ cd django-webapp && python manage.py runserver
 - Аугментация: включена
 - Оптимизаторы: sgd, adam, rmsprop
 
-### MobileNetV2 (transfer learning)
+### ResNet20 (transfer learning)
 - IMAGE_SIZE: 224 (ImageNet стандарт)
 - Предобученная: True
 - Этап 1: только классификатор (50 эпох, LR=0.001)
@@ -96,9 +96,14 @@ cd django-webapp && python manage.py runserver
 см. `task/homework1.md`
 
 Требования:
-1. Датасет 3 класса, 100+ изображений на класс
+1. Датасет 3 близких класса, 100+ изображений на класс
 2. Аугментация данных
 3. Регуляризация (dropout, weight decay)
-4. Перенос обучения (transfer learning)
+4. Перенос обучения (ResNet20)
 5. Экспорт в ONNX
-6. Django web-приложение для классификации
+6. Django SSR web-приложение для классификации
+7. Индивидуальный дизайн
+8. Отображение загруженного изображения
+9. Описание и 2-3 ключевых параметра по каждому классу
+10. Minio (S3) для хранения изображений
+11. Вторая страница со списком загруженных картинок

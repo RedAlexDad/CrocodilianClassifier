@@ -75,11 +75,11 @@ class CNNConfig(Config):
     DEFAULT_OPTIMIZER = 'sgd'
 
 
-class MobileNetConfig(Config):
-    """Конфигурация для MobileNetV2"""
-    MODEL_NAME = 'MobileNetV2'
-    CHECKPOINT = 'checkpoints/mobilenet_checkpoint.pth'
-    ONNX_PATH = 'data/models/mobilenet.onnx'
+class ResNetConfig(Config):
+    """Конфигурация для ResNet20"""
+    MODEL_NAME = 'ResNet20'
+    CHECKPOINT = 'checkpoints/resnet20_checkpoint.pth'
+    ONNX_PATH = 'data/models/resnet20.onnx'
     
     # Архитектура
     IMAGE_SIZE = 224  # Стандарт для ImageNet
