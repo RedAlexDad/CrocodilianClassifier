@@ -1,10 +1,10 @@
 """
 Функции для обучения моделей
 """
-
 import torch
 import torch.nn as nn
 import numpy as np
+import psutil
 from tqdm.auto import tqdm
 from sklearn.metrics import classification_report
 
@@ -186,8 +186,6 @@ class Trainer:
             if mlflow_available and (epoch + 1) % log_every == 0 or epoch == 0:
                 try:
                     import mlflow
-                    import psutil
-                    import torch
 
                     # Метрики обучения
                     mlflow.log_metric("train_loss", train_loss, step=epoch)
