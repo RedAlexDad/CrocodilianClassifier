@@ -337,6 +337,35 @@ class Trainer:
             if onnx_path and os.path.exists(onnx_path):
                 mlflow.log_artifact(onnx_path)
 
+            # Sample images with predictions
+            try:
+                from utils import log_sample_images
+                test_images = []
+                test_labels = []
+                for batch_x, batch_y in dataloader["test"]:
+                    test_images.append(batch_x.numpy())
+                    test_labels.append(batch_y.numpy())
+                test_images = np.concatenate(test_images, axis=0)
+                test_labels = np.concatenate(test_labels, axis=0)
+
+                self.model.eval()
+                with torch.no_grad():
+                    x_tensor = torch.tensor(test_images).to(device)
+                    outputs = self.model(x_tensor)
+                    probs = torch.softmax(outputs, dim=1).cpu().numpy()
+                    preds = probs.argmax(axis=1)
+
+                log_sample_images(
+                    test_images,
+                    test_labels.argmax(axis=1),
+                    class_names or ["крокодил", "аллигатор", "кайман"],
+                    num_samples=5,
+                    predictions=preds,
+                    probabilities=probs,
+                )
+            except Exception:
+                pass
+
             # Log final metrics
             mlflow.log_metric("final_val_accuracy", self.best_acc)
             mlflow.log_metric("final_train_loss", self.history["train_loss"][-1] if self.history["train_loss"] else 0)

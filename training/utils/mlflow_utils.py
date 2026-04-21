@@ -3,10 +3,13 @@ MLflow интеграция для отслеживания обучения
 Хранение артефактов в MinIO (S3)
 """
 
+import io
 import os
+
 import mlflow
-from mlflow.tracking import MlflowClient
+import numpy as np
 import torch
+from mlflow.tracking import MlflowClient
 
 MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000")
 MLFLOW_EXPERIMENT_NAME = "crocodilian-classifier"
@@ -80,31 +83,83 @@ def log_model_summary(model, model_name):
     mlflow.log_param(f"{model_name}_architecture", summary[:500])
 
 
-def log_sample_images(images, labels, class_names, num_samples=5):
-    """Логировать образцы изображений как артефакты"""
+def log_sample_images(images, labels, class_names, num_samples=5, predictions=None, probabilities=None):
+    """Логировать образцы изображений как артефакты с предсказаниями
+
+    Args:
+        images: изображения (N, C, H, W)
+        labels: истинные метки
+        class_names: названия классов
+        num_samples: количество образцов на класс
+        predictions: предсказанные метки (опционально)
+        probabilities: вероятности предсказаний (опционально)
+    """
     import matplotlib.pyplot as plt
 
-    indices = np.random.choice(len(images), min(num_samples, len(images)), replace=False)
+    unique_labels = list(set(labels))
+    num_classes = len(unique_labels)
 
-    fig, axes = plt.subplots(1, len(indices), figsize=(15, 3))
-    if len(indices) == 1:
+    samples_per_class = {label: [] for label in unique_labels}
+    for idx, label in enumerate(labels):
+        if len(samples_per_class[label]) < num_samples:
+            samples_per_class[label].append(idx)
+
+    all_indices = []
+    for label in unique_labels:
+        all_indices.extend(samples_per_class[label][:num_samples])
+
+    if not all_indices:
+        return
+
+    fig, axes = plt.subplots(
+        num_classes, num_samples, figsize=(3 * num_samples, 3 * num_classes)
+    )
+    if num_classes == 1:
         axes = [axes]
+    if num_samples == 1:
+        axes = [[ax] for ax in axes]
+    else:
+        axes = [axes[i] if isinstance(axes[i], list) else list(axes[i]) for i in range(len(axes))]
 
-    for idx, ax in zip(indices, axes):
-        img = images[idx]
-        label = labels[idx]
+    for row, label in enumerate(unique_labels):
+        for col, idx in enumerate(samples_per_class[label][:num_samples]):
+            ax = axes[row][col] if num_classes > 1 else axes[col]
+            img = images[idx].copy()
 
-        if img.shape[0] == 3:
-            img = img.transpose(1, 2, 0)
+            if img.shape[0] == 3:
+                img = img.transpose(1, 2, 0)
 
-        ax.imshow(img)
-        ax.set_title(f"{class_names[label]}")
-        ax.axis("off")
+            if img.min() < 0:
+                img = (img - img.min()) / (img.max() - img.min() + 1e-8)
+
+            ax.imshow(img)
+
+            true_name = class_names[label]
+            title = true_name
+
+            if predictions is not None:
+                pred = predictions[idx]
+                pred_name = class_names[pred]
+                is_correct = pred == label
+
+                if probabilities is not None:
+                    conf = probabilities[idx][pred] * 100
+                    title = f"True: {true_name}\nPred: {pred_name}\nConf: {conf:.1f}%"
+                    color = "green" if is_correct else "red"
+                else:
+                    title = f"True: {true_name}\nPred: {pred_name}\n{'OK' if is_correct else 'X'}"
+                    color = "green" if is_correct else "red"
+
+                ax.set_title(title, color=color, fontsize=8)
+            else:
+                ax.set_title(title, fontsize=8)
+
+            ax.axis("off")
 
     plt.tight_layout()
 
     buf = io.BytesIO()
-    plt.savefig(buf, format="png", dpi=50)
+    plt.savefig(buf, format="png", dpi=100)
     plt.close()
 
     mlflow.log_artifact(buf.getvalue(), "sample_images.png")
