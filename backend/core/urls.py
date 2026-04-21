@@ -20,6 +20,8 @@ urlpatterns = [
     path("api/model-upload", views.model_upload_api, name="model_upload_api"),
     path("api/model-delete", views.model_delete_api, name="model_delete_api"),
     path("api/predict", views.predictImage, name="predict_api"),
+    path("api/images", views.get_uploaded_images_api, name="images_api"),
+    path("api/predict-existing", views.predict_existing_image_api, name="predict_existing_api"),
 ]
 
 # Отдавать медиа файлы через S3 не нужно - они уже доступны по прямому URL

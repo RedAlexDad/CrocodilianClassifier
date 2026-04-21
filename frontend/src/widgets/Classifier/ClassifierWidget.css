@@ -153,7 +153,23 @@
   color: #374151;
 }
 
-.upload-form input[type="file"],
+.upload-form input[type="file"] {
+  width: 100%;
+  padding: 12px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.upload-form input[type="file"]:hover {
+  border-color: #4f46e5;
+  background: #f3f4f6;
+}
+
 .upload-form select {
   width: 100%;
   padding: 10px;
@@ -161,6 +177,24 @@
   border-radius: 8px;
   margin-bottom: 16px;
   font-size: 14px;
+  background: white;
+  cursor: pointer;
+}
+
+.image-preview {
+  margin: 16px 0;
+  text-align: center;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.image-preview img {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .upload-form input[type="submit"] {

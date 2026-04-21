@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { store } from './app/store/store';
 import { ClassifierWidget } from './widgets/Classifier/ClassifierWidget';
 import { ModelManagementWidget } from './widgets/ModelManagement/ModelManagementWidget';
+import { GalleryWidget } from './widgets/Gallery/GalleryWidget';
 import './index.css';
 
 const queryClient = new QueryClient();
@@ -17,6 +18,7 @@ function App() {
             <div className="container">
               <nav className="navbar">
                 <Link to="/" className="nav-link">Классификация</Link>
+                <Link to="/gallery" className="nav-link">Галерея</Link>
                 <Link to="/models" className="nav-link">Управление моделями</Link>
               </nav>
             </div>
@@ -25,6 +27,7 @@ function App() {
           <div className="container">
             <Routes>
               <Route path="/" element={<ClassifierWidget />} />
+              <Route path="/gallery" element={<GalleryWidget />} />
               <Route path="/models" element={<ModelManagementWidget />} />
             </Routes>
           </div>

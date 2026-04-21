@@ -575,3 +575,73 @@ def model_delete_api(request):
         return JsonResponse({"success": True})
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+
+def get_uploaded_images_api(request):
+    """API: получить список всех загруженных изображений из MinIO"""
+    try:
+        storage = default_storage
+        prefix = f"{storage.location}/images/"
+
+        s3 = storage.connection
+        bucket = s3.Bucket(settings.AWS_STORAGE_BUCKET_NAME)
+
+        images = []
+        for obj in bucket.objects.filter(Prefix=prefix):
+            key = obj.key
+            # Пропускаем директории
+            if key.endswith('/'):
+                continue
+
+            # Получаем имя файла без префикса
+            filename = key.replace(prefix, "")
+            if filename:
+                # Генерируем URL для изображения
+                image_url = default_storage.url(key.replace(f"{storage.location}/", ""))
+                images.append({
+                    "filename": filename,
+                    "url": image_url,
+                    "size": obj.size,
+                    "last_modified": obj.last_modified.isoformat()
+                })
+
+        return JsonResponse({"images": images})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@csrf_exempt
+def predict_existing_image_api(request):
+    """API: классифицировать уже загруженное изображение по URL"""
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=400)
+
+    import json
+    data = json.loads(request.body)
+    image_path = data.get("image_path")
+    model_name = data.get("model_name")
+
+    if not image_path:
+        return JsonResponse({"error": "image_path required"}, status=400)
+
+    if not model_name:
+        model_name = pick_model_for_request(request)
+
+    if not model_name:
+        return JsonResponse({
+            "error": "Нет доступных моделей"
+        }, status=400)
+
+    try:
+        # image_path приходит как "images/filename.jpg"
+        scorePrediction = predictImageData(model_name, image_path)
+        image_url = default_storage.url(image_path)
+
+        return JsonResponse({
+            "scorePrediction": scorePrediction,
+            "image_url": image_url,
+            "current_model": model_name
+        })
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+

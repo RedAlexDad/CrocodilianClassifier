@@ -128,6 +128,15 @@ export function ClassifierWidget() {
             onChange={handleFileChange}
           />
 
+          {selectedFile && imageUrl && (
+            <div className="image-preview">
+              <img
+                src={imageUrl}
+                alt="Выбранное изображение"
+              />
+            </div>
+          )}
+
           <label className="form-label" style={{ marginTop: '15px' }}>
             Выберите модель:
           </label>
