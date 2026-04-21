@@ -3,7 +3,7 @@
 Главный скрипт для обучения моделей классификации
 
 Использование:
-    python main.py --model mlp|cnn|resnet20|all [--optimizer adam|sgd|...]
+    python main.py --model mlp|cnn|resnet20|mobilenet|all [--optimizer adam|sgd|...]
 """
 import argparse
 import torch
@@ -45,13 +45,21 @@ def main():
             print(f"\n=== Сравнение оптимизаторов для {model_type.upper()} ===")
 
             for opt in optimizers:
-                acc = trainer(optimizer_name=opt, seed=args.seed, epochs=args.epochs)
+                kwargs = {'optimizer_name': opt, 'seed': args.seed, 'epochs': args.epochs}
+                if model_type in ('resnet20', 'mobilenet'):
+                    kwargs.update({
+                        'epochs_stage1': args.epochs_stage1,
+                        'finetune_layers': args.finetune_layers,
+                        'lr': args.lr,
+                        'lr_finetune': args.lr_finetune
+                    })
+                acc = trainer(**kwargs)
                 results.append({'name': model_type.upper(), 'optimizer': opt, 'acc': acc})
         else:
             optimizer = args.optimizer or get_default_optimizer(model_type)
             kwargs = {'optimizer_name': optimizer, 'seed': args.seed, 'epochs': args.epochs}
             
-            if model_type == 'resnet20':
+            if model_type in ('resnet20', 'mobilenet'):
                 kwargs.update({
                     'epochs_stage1': args.epochs_stage1,
                     'finetune_layers': args.finetune_layers,

@@ -1,48 +1,79 @@
 """
 Константы и настройки для обучения моделей
 """
-from scripts import train_mlp, train_cnn, train_resnet20
+from scripts import (
+    train_mlp, train_cnn, train_resnet20,
+    train_mobilenet
+)
 
 
 OPTIMIZERS = ['adam', 'adagrad', 'rmsprop', 'sgd']
 OPTIMIZERS_MLP = ['adam', 'adagrad', 'rmsprop']
 OPTIMIZERS_CNN = ['sgd', 'adam', 'rmsprop']
-OPTIMIZERS_RESNET20 = ['adam', 'adagrad', 'rmsprop']
+OPTIMIZERS_TL = ['adam', 'adagrad', 'rmsprop']  # Transfer learning: ResNet20, MobileNet
 
 
-DEFAULT_OPTIMIZERS = {
-    'mlp': 'adam',
-    'cnn': 'sgd',
-    'resnet20': 'adam',
+MODEL_CONFIGS = {
+    'mlp': {
+        'trainer': train_mlp,
+        'default_optimizer': 'adam',
+        'available_optimizers': OPTIMIZERS_MLP,
+        'description': 'MLP (многослойный перцептрон)',
+    },
+    'cnn': {
+        'trainer': train_cnn,
+        'default_optimizer': 'sgd',
+        'available_optimizers': OPTIMIZERS_CNN,
+        'description': 'CNN (свёрточная нейросеть)',
+    },
+    'resnet20': {
+        'trainer': train_resnet20,
+        'default_optimizer': 'adam',
+        'available_optimizers': OPTIMIZERS_TL,
+        'description': 'ResNet20 (transfer learning)',
+    },
+    'mobilenet': {
+        'trainer': train_mobilenet,
+        'default_optimizer': 'adam',
+        'available_optimizers': OPTIMIZERS_TL,
+        'description': 'MobileNetV2 (transfer learning)',
+    },
 }
 
 
-MODELS = ['mlp', 'cnn', 'resnet20']
+MODELS = list(MODEL_CONFIGS.keys())
+
+DEFAULT_OPTIMIZER = 'adam'
+DEFAULT_MODEL = 'all'
+
+
+def get_model_config(model_type):
+    """Получить конфигурацию модели"""
+    return MODEL_CONFIGS.get(model_type)
 
 
 def get_model_trainer(model_type):
     """Получить функцию обучения для модели"""
-    trainers = {
-        'mlp': train_mlp,
-        'cnn': train_cnn,
-        'resnet20': train_resnet20,
-    }
-    return trainers.get(model_type)
+    config = get_model_config(model_type)
+    return config['trainer'] if config else None
 
 
 def get_default_optimizer(model_type):
     """Получить оптимизатор по умолчанию для модели"""
-    return DEFAULT_OPTIMIZERS.get(model_type, 'adam')
+    config = get_model_config(model_type)
+    return config['default_optimizer'] if config else DEFAULT_OPTIMIZER
 
 
 def get_available_optimizers(model_type):
     """Получить доступные оптимизаторы для модели"""
-    optimizers = {
-        'mlp': OPTIMIZERS_MLP,
-        'cnn': OPTIMIZERS_CNN,
-        'resnet20': OPTIMIZERS_RESNET20,
-    }
-    return optimizers.get(model_type, OPTIMIZERS)
+    config = get_model_config(model_type)
+    return config['available_optimizers'] if config else OPTIMIZERS
+
+
+def get_model_description(model_type):
+    """Получить описание модели"""
+    config = get_model_config(model_type)
+    return config['description'] if config else ''
 
 
 def print_summary(results):

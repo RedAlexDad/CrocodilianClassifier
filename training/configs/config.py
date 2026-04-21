@@ -98,3 +98,28 @@ class ResNetConfig(Config):
     
     # Доступные оптимизаторы
     AVAILABLE_OPTIMIZERS = ['adam', 'adagrad', 'rmsprop']
+
+
+class MobileNetConfig(Config):
+    """Конфигурация для MobileNetV2"""
+    MODEL_NAME = 'MobileNetV2'
+    CHECKPOINT = 'checkpoints/mobilenet_checkpoint.pth'
+    ONNX_PATH = 'data/models/mobilenet.onnx'
+    
+    # Архитектура
+    IMAGE_SIZE = 224
+    PRETRAINED = True
+    
+    # Обучение (два этапа)
+    EPOCHS_STAGE1 = 50
+    EPOCHS_STAGE2 = 30
+    LEARNING_RATE_STAGE1 = 0.001
+    LEARNING_RATE_STAGE2 = 0.0001
+    FINETUNE_LAYERS = 20
+    
+    # Нормализация ImageNet
+    IMAGENET_MEAN = [0.485, 0.456, 0.406]
+    IMAGENET_STD = [0.229, 0.224, 0.225]
+    
+    # Доступные оптимизаторы
+    AVAILABLE_OPTIMIZERS = ['adam', 'adagrad', 'rmsprop']
