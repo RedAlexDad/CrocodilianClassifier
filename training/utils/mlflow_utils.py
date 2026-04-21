@@ -14,7 +14,7 @@ from mlflow.tracking import MlflowClient
 MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000")
 MLFLOW_EXPERIMENT_NAME = "crocodilian-classifier"
 
-S3_BUCKET = os.environ.get("AWS_S3_MLWFL_ARTIFACTS", "crocodilian-artifacts")
+S3_BUCKET = os.environ.get("AWS_S3_MLWFL_ARTIFACTS", "crocodilian")
 S3_ENDPOINT = os.environ.get("MLFLOW_S3_ENDPOINT_URL", "http://localhost:9000")
 
 

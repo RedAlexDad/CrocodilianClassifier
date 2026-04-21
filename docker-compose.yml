@@ -28,7 +28,7 @@ services:
       - USE_S3=true
       - AWS_ACCESS_KEY_ID=minioadmin
       - AWS_SECRET_ACCESS_KEY=minioadmin
-      - AWS_STORAGE_BUCKET_NAME=dz1-media
+      - AWS_STORAGE_BUCKET_NAME=crocodilian
       - AWS_S3_ENDPOINT_URL=http://minio:9000
       - AWS_S3_REGION_NAME=us-east-1
       - AWS_S3_CUSTOM_DOMAIN=localhost:9000
@@ -46,15 +46,15 @@ services:
   # MLflow сервер с хранением артефактов в S3
   mlflow:
     image: ghcr.io/mlflow/mlflow:latest
-    command: mlflow server --backend-store-uri sqlite:///mlflow.db --artifacts-destination s3://crocodilian-artifacts --host 0.0.0.0
+    command: mlflow server --backend-store-uri sqlite:///mlflow.db --artifacts-destination s3://crocodilian/mlflow-artifacts --host 0.0.0.0
     ports:
       - "5000:5000"
     environment:
-      - MLFLOW_ARTIFACT_ROOT=s3://crocodilian-artifacts
+      - MLFLOW_ARTIFACT_ROOT=s3://crocodilian/mlflow-artifacts
       - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
       - AWS_ACCESS_KEY_ID=minioadmin
       - AWS_SECRET_ACCESS_KEY=minioadmin
-      - AWS_S3_MLWFL_ARTIFACTS=crocodilian-artifacts
+      - AWS_S3_MLWFL_ARTIFACTS=crocodilian
     depends_on:
       minio:
         condition: service_healthy
@@ -95,10 +95,10 @@ services:
       /bin/sh -c "
       sleep 5;
       mc alias set myminio http://minio:9000 minioadmin minioadmin;
-      mc mb myminio/dz1-media --ignore-existing;
-      mc mb myminio/crocodilian-artifacts --ignore-existing;
-      mc anonymous set download myminio/dz1-media;
-      mc anonymous set download myminio/crocodilian-artifacts;
+      mc mb myminio/crocodilian --ignore-existing;
+      mc anonymous set download myminio/crocodilian;
+      mc admin user add myminio minioadmin minioadmin;
+      mc admin policy set myminio readwrite user=minioadmin;
       exit 0;
       "
     restart: "no"

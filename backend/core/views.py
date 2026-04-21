@@ -10,7 +10,7 @@ import os
 import boto3
 
 MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000")
-MLFLOW_BUCKET = "mlflow-artifacts"
+MLFLOW_BUCKET = "crocodilian"
 
 # Классы по вашему варианту: крокодил, аллигатор, кайман
 imageClassList = {"0": "Крокодил", "1": "Аллигатор", "2": "Кайман"}
@@ -113,7 +113,7 @@ def download_mlflow_model_api(request):
         )
 
         bucket = MLFLOW_BUCKET
-        prefix = f"1/{run_id}/artifacts/"
+        prefix = f"mlflow-artifacts/{run_id}/artifacts/"
 
         onnx_key = None
         response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
@@ -210,7 +210,7 @@ def predictImage(request):
         file_path = f"images/{fileObj.name}"
         saved_path = default_storage.save(file_path, fileObj)
 
-        # Получаем URL через хранилище (для S3 будет http://localhost:19000/dz1-media/media/images/...)
+        # Получаем URL через хранилище (для S3 будет http://localhost:19000/crocodilian/media/images/...)
         file_url = default_storage.url(saved_path)
 
         # Получение имени модели (если выбрано)

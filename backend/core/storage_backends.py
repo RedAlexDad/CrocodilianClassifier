@@ -11,7 +11,7 @@ class MinioMediaStorage(S3Boto3Storage):
     """S3 хранилище для медиа файлов с правильным URL для MinIO"""
 
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault("bucket_name", getattr(settings, "AWS_STORAGE_BUCKET_NAME", "dz1-media"))
+        kwargs.setdefault("bucket_name", getattr(settings, "AWS_STORAGE_BUCKET_NAME", "crocodilian"))
         kwargs.setdefault("location", "media")
         kwargs.setdefault("default_acl", "public-read")
         kwargs.setdefault("querystring_auth", False)
@@ -29,7 +29,7 @@ class MinioMediaStorage(S3Boto3Storage):
 
         # Базовый URL для доступа к файлам (для браузера)
         self.custom_domain = getattr(settings, "AWS_S3_CUSTOM_DOMAIN", "localhost:9000")
-        self.bucket_name = getattr(settings, "AWS_STORAGE_BUCKET_NAME", "dz1-media")
+        self.bucket_name = getattr(settings, "AWS_STORAGE_BUCKET_NAME", "crocodilian")
         self.location = getattr(settings, "AWS_LOCATION", "media")
 
     def url(self, name, parameters=None, expire=None, http_method=None):

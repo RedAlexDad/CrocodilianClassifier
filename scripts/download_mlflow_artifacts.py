@@ -26,8 +26,8 @@ def main():
         config=Config(signature_version="s3v4"),
     )
 
-    bucket = "mlflow-artifacts"
-    prefix = f"{experiment_id}/{run_id}/artifacts/"
+    bucket = "crocodilian"
+    prefix = f"mlflow-artifacts/{experiment_id}/{run_id}/artifacts/"
     os.makedirs(artifacts_dir, exist_ok=True)
 
     paginator = s3.get_paginator("list_objects_v2")

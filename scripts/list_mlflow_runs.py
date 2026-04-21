@@ -13,7 +13,7 @@ def main():
         config=Config(signature_version="s3v4"),
     )
 
-    bucket = "mlflow-artifacts"
+    bucket = "crocodilian"
     response = s3.list_objects_v2(Bucket=bucket, Prefix="")
 
     if "Contents" not in response:
