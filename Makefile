@@ -74,7 +74,7 @@ help: ## Показать справку
 	@echo "  $(MAKE) frontend-rebuild             Пересобрать React (frontend)"
 	@echo "  $(MAKE) backend-restart              Перезапустить Django (быстро)"
 	@echo "  $(MAKE) frontend-restart             Перезапустить React (быстро)"
-	@echo "  $(MAKE) restart                      Перезапустить backend + frontend (быстро)"
+	@echo "  $(MAKE) web-restart                  Перезапустить backend + frontend (быстро)"
 	@echo "  $(MAKE) logs service=web             Логи сервиса"
 	@echo "  $(MAKE) clean                        Очистить контейнеры"
 	@echo ""
@@ -224,13 +224,13 @@ backend-restart: ## Перезапустить Django (без пересборк
 	@echo "$(GREEN)Перезапуск Backend (Django)...$(NC)"
 	$(DOCKER_COMPOSE) restart web
 
-restart: ## Перезапустить backend + frontend вместе (быстро)
+web-restart: ## Перезапустить backend + frontend вместе (быстро)
 	@echo "$(GREEN)Перезапуск Backend и Frontend...$(NC)"
 	$(DOCKER_COMPOSE) restart web frontend
 
-web-rebuild: backend-rebuild ## Алиас для backend-rebuild
+restart: web-restart ## Алиас для web-restart
 
-web-restart: backend-restart ## Алиас для backend-restart
+web-rebuild: backend-rebuild ## Алиас для backend-rebuild
 
 logs: ## Логи сервиса (service=web|mlflow|minio)
 	$(DOCKER_COMPOSE) logs -f $(service)
