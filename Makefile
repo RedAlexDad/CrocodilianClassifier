@@ -87,6 +87,7 @@ help: ## Показать справку
 	@echo "$(GREEN)MinIO:$(NC)"
 	@echo "  $(MAKE) minio-up                     Запустить MinIO"
 	@echo "  $(MAKE) minio-console                Открыть MinIO Console"
+	@echo "  $(MAKE) minio-clear                  Очистить все бакеты MinIO"
 	@echo ""
 	@echo "$(GREEN)Django (Backend):$(NC)"
 	@echo "  $(MAKE) run-django                   Запустить Django локально"
@@ -314,6 +315,22 @@ minio-up: ## Запустить MinIO
 minio-console: ## MinIO Console
 	@echo "$(BLUE)Открытие MinIO Console...$(NC)"
 	@xdg-open http://localhost:9001 || echo "Откройте http://localhost:9001"
+
+minio-clear: ## Очистить все бакеты MinIO
+	@echo "$(YELLOW)Очистка всех бакетов MinIO...$(NC)"
+	@$(DOCKER_COMPOSE) exec backend python -c "\
+import boto3; \
+from django.conf import settings; \
+import os; \
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings'); \
+import django; \
+django.setup(); \
+s3 = boto3.client('s3', endpoint_url=settings.AWS_S3_ENDPOINT_URL, aws_access_key_id='minioadmin', aws_secret_access_key='minioadmin'); \
+buckets = ['crocodilian', 'crocodilian-artifacts', 'dz1-media', 'mlflow-artifacts']; \
+[print(f'Очистка {b}...') or [s3.delete_objects(Bucket=b, Delete={'Objects': [{'Key': obj['Key']} for obj in s3.list_objects_v2(Bucket=b).get('Contents', [])[i:i+1000]]}) for i in range(0, len(s3.list_objects_v2(Bucket=b).get('Contents', [])), 1000)] or print(f'✓ {b} очищен') for b in buckets if s3.list_objects_v2(Bucket=b).get('Contents')]; \
+print('$(GREEN)Все бакеты очищены!$(NC)'); \
+"
+	@echo "$(GREEN)✓ MinIO полностью очищен$(NC)"
 
 # ==============================================================================
 # Django
