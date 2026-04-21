@@ -10,6 +10,12 @@ interface ModelInfo {
 interface MlflowRun {
   run_id: string;
   experiment_id: string;
+  model_name?: string;
+  optimizer?: string;
+  accuracy?: number;
+  loss?: number;
+  date?: string;
+  status?: string;
 }
 
 export function ModelManagementWidget() {
@@ -255,7 +261,24 @@ export function ModelManagementWidget() {
                 <div className="runs-list">
                   {mlflowRuns.map(run => (
                     <div key={run.run_id} className="run-item">
-                      <span className="run-id">{run.run_id}</span>
+                      <div className="run-info">
+                        <div className="run-header">
+                          <span className="model-name">{run.model_name || 'Unknown'}</span>
+                          {run.optimizer && <span className="optimizer">{run.optimizer}</span>}
+                        </div>
+                        <div className="run-metrics">
+                          {run.accuracy !== undefined && (
+                            <span className="metric">Accuracy: {(run.accuracy * 100).toFixed(2)}%</span>
+                          )}
+                          {run.loss !== undefined && (
+                            <span className="metric">Loss: {run.loss.toFixed(4)}</span>
+                          )}
+                        </div>
+                        <div className="run-meta">
+                          <span className="run-date">{run.date || 'N/A'}</span>
+                          <span className="run-id-short">{run.run_id.substring(0, 8)}...</span>
+                        </div>
+                      </div>
                       <button
                         className="download-btn"
                         onClick={() => downloadFromMlflow(run.run_id)}

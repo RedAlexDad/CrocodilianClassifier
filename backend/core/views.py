@@ -56,40 +56,50 @@ def get_mlflow_models():
 
 
 def get_mlflow_runs_api(request):
-    """API: получить список RUN_ID из MLflow"""
-    from botocore.client import Config
-
+    """API: получить список RUN_ID из MLflow с метаданными"""
     try:
+        # Читаем метаданные из S3 артефактов
         s3 = boto3.client(
             "s3",
             endpoint_url=settings.AWS_S3_ENDPOINT_URL,
             aws_access_key_id="minioadmin",
             aws_secret_access_key="minioadmin",
-            config=Config(signature_version="s3v4"),
         )
 
         bucket = MLFLOW_BUCKET
         response = s3.list_objects_v2(Bucket=bucket, Prefix="")
 
-        runs = {}
-        for obj in response["Contents"]:
+        runs_dict = {}
+        for obj in response.get("Contents", []):
             key = obj["Key"]
             if "/artifacts/" in key:
                 parts = key.split("/")
-                if len(parts) >= 2:
+                if len(parts) >= 3:
                     exp_id = parts[0]
-                    if exp_id not in runs:
-                        runs[exp_id] = set()
-                    if len(parts) >= 3:
-                        runs[exp_id].add(parts[1])
+                    run_id = parts[1]
 
-        result = []
-        for exp_id, run_ids in runs.items():
-            for run_id in sorted(run_ids):
-                result.append({"run_id": run_id, "experiment_id": exp_id})
+                    if run_id not in runs_dict:
+                        runs_dict[run_id] = {
+                            "run_id": run_id,
+                            "experiment_id": exp_id,
+                            "model_name": "Unknown",
+                            "date": obj["LastModified"].strftime("%Y-%m-%d %H:%M"),
+                            "has_onnx": False,
+                        }
+
+                    # Определяем тип модели по имени файла .onnx
+                    if key.endswith(".onnx"):
+                        model_file = key.split("/")[-1].replace(".onnx", "")
+                        runs_dict[run_id]["model_name"] = model_file.upper()
+                        runs_dict[run_id]["has_onnx"] = True
+
+        # Фильтруем только runs с ONNX моделями
+        result = [run for run in runs_dict.values() if run["has_onnx"]]
+        result.sort(key=lambda x: x["date"], reverse=True)
 
         return JsonResponse({"runs": result})
     except Exception as e:
+        print(f"Ошибка получения runs: {e}")
         return JsonResponse({"error": str(e)}, status=500)
 
 
