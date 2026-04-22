@@ -49,12 +49,12 @@ media/models/*
 !media/models/.gitkeep
 
 # ML модели
-*.pth
-*.pt
-*.onnx
-*.h5
-*.pkl
-*.pickle
+# *.pth
+# *.pt
+# *.onnx
+# *.h5
+# *.pkl
+# *.pickle
 
 # Jupyter
 .ipynb_checkpoints/
