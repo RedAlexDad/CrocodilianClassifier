@@ -112,13 +112,16 @@ def predict_image(model_name, file_path):
             # Инференс
             input_name = sess.get_inputs()[0].name
             output = sess.run(None, {input_name: img})
-            predicted_class = int(np.argmax(output[0]))
-
-            # Вычисляем confidence
-            probabilities = output[0][0]
-            if len(probabilities.shape) > 0:
+            
+            # Получаем логиты и применяем softmax для получения вероятностей
+            logits = output[0][0]
+            if len(logits.shape) > 0:
+                exp_logits = np.exp(logits - np.max(logits))
+                probabilities = exp_logits / np.sum(exp_logits)
+                predicted_class = int(np.argmax(probabilities))
                 confidence = float(np.max(probabilities))
             else:
+                predicted_class = int(np.argmax(logits))
                 confidence = 1.0
 
             return {
