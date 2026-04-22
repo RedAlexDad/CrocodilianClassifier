@@ -2,8 +2,9 @@ import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 
 export interface PredictionResult {
-  scorePrediction: string;
-  image_url: string;
+  predictedLabel: string;
+  confidence: string;
+  imageUrl: string;
 }
 
 interface ClassifierState {
@@ -55,7 +56,7 @@ const classifierSlice = createSlice({
         (state, action) => {
           state.isLoading = false;
           state.prediction = action.payload;
-          state.imageUrl = action.payload.image_url;
+          state.imageUrl = action.payload.imageUrl;
           state.error = null;
         }
       )

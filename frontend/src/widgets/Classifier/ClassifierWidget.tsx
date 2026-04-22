@@ -197,15 +197,18 @@ export function ClassifierWidget() {
 
         {prediction && (
           <div className="result">
-            {prediction.image_url && (
+            {imageUrl && (
               <img
-                src={prediction.image_url}
+                src={imageUrl}
                 alt="Загруженное изображение"
                 className="result-image"
               />
             )}
             <h3>Результат классификации:</h3>
-            <div className="prediction">{prediction.scorePrediction}</div>
+            <div className="prediction">{prediction.predictedLabel}</div>
+            {prediction.confidence && (
+              <p className="confidence">Уверенность: {prediction.confidence}</p>
+            )}
           </div>
         )}
 
