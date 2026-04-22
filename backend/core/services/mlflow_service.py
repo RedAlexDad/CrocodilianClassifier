@@ -1,12 +1,13 @@
 """
 Сервис для работы с MLflow
 """
+
 import os
 import boto3
 from django.conf import settings
 
 
-MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000")
+MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5001")
 MLFLOW_BUCKET = "crocodilian"
 MLFLOW_PREFIX = "mlflow-artifacts/"
 
@@ -100,7 +101,9 @@ def get_mlflow_runs():
                                     parts = line.split()
                                     if len(parts) >= 2:
                                         try:
-                                            runs_dict[run_id]["accuracy"] = float(parts[1])
+                                            runs_dict[run_id]["accuracy"] = float(
+                                                parts[1]
+                                            )
                                         except (ValueError, IndexError):
                                             pass
 
@@ -113,7 +116,9 @@ def get_mlflow_runs():
                                     except (ValueError, IndexError):
                                         pass
                         except Exception as e:
-                            print(f"Ошибка чтения classification_report для {run_id}: {e}")
+                            print(
+                                f"Ошибка чтения classification_report для {run_id}: {e}"
+                            )
 
         # Фильтруем только runs с ONNX моделями
         result = [run for run in runs_dict.values() if run["has_onnx"]]

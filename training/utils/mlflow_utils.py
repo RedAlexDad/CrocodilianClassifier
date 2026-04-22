@@ -11,11 +11,11 @@ import numpy as np
 import torch
 from mlflow.tracking import MlflowClient
 
-MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000")
+MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5001")
 MLFLOW_EXPERIMENT_NAME = "crocodilian-classifier"
 
 S3_BUCKET = os.environ.get("AWS_S3_MLWFL_ARTIFACTS", "crocodilian")
-S3_ENDPOINT = os.environ.get("MLFLOW_S3_ENDPOINT_URL", "http://localhost:9000")
+S3_ENDPOINT = os.environ.get("MLFLOW_S3_ENDPOINT_URL", "http://localhost:9010")
 
 
 def setup_mlflow(experiment_name=None, tracking_uri=None):
@@ -30,7 +30,9 @@ def setup_mlflow(experiment_name=None, tracking_uri=None):
         urllib.request.urlopen(uri, timeout=2)
     except Exception:
         # Fallback to local storage
-        local_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "mlruns")
+        local_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "mlruns"
+        )
         uri = local_path
         print(f"MLflow tracking server unavailable, using local storage: {local_path}")
 
@@ -54,6 +56,7 @@ def setup_mlflow(experiment_name=None, tracking_uri=None):
     # Enable system metrics logging
     try:
         from mlflow.system_metrics import enable_system_metrics_logging
+
         enable_system_metrics_logging()
     except Exception as e:
         print(f"System metrics: {e}")
@@ -69,7 +72,9 @@ def setup_mlflow(experiment_name=None, tracking_uri=None):
 
 def log_metrics(epoch, loss, accuracy, phase="train"):
     """Логировать метрики"""
-    mlflow.log_metric({f"{phase}_loss": loss, f"{phase}_accuracy": accuracy}, step=epoch)
+    mlflow.log_metric(
+        {f"{phase}_loss": loss, f"{phase}_accuracy": accuracy}, step=epoch
+    )
 
 
 def log_params(params):
@@ -83,7 +88,9 @@ def log_model_summary(model, model_name):
     mlflow.log_param(f"{model_name}_architecture", summary[:500])
 
 
-def log_sample_images(images, labels, class_names, num_samples=5, predictions=None, probabilities=None):
+def log_sample_images(
+    images, labels, class_names, num_samples=5, predictions=None, probabilities=None
+):
     """Логировать образцы изображений как артефакты с предсказаниями
 
     Args:
@@ -252,7 +259,9 @@ def download_latest_model(model_name, output_path, experiment_name=None):
     if not exp:
         raise ValueError(f"Experiment {exp_name} not found")
 
-    runs = client.search_runs(exp.experiment_id, "metrics.val_accuracy DESC", max_results=1)
+    runs = client.search_runs(
+        exp.experiment_id, "metrics.val_accuracy DESC", max_results=1
+    )
 
     if not runs:
         raise ValueError("No runs found")
@@ -261,7 +270,9 @@ def download_latest_model(model_name, output_path, experiment_name=None):
 
     for artifact in client.list_artifacts(best_run.info.run_id, "model"):
         if artifact.path.endswith(".pth"):
-            client.download_artifacts(best_run.info.run_id, artifact.path, dst_path=output_path)
+            client.download_artifacts(
+                best_run.info.run_id, artifact.path, dst_path=output_path
+            )
             return output_path
 
     return None
