@@ -1,6 +1,14 @@
-import { useCallback, useState, useEffect } from 'react';
-import { Upload, Trash2, Download, Loader2, Database, Check, X } from 'lucide-react';
-import './ModelManagementWidget.css';
+import {
+  Check,
+  Database,
+  Download,
+  Loader2,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import "./ModelManagementWidget.css";
 
 interface ModelInfo {
   name: string;
@@ -30,23 +38,27 @@ export function ModelManagementWidget() {
   const [mlflowRuns, setMlflowRuns] = useState<MlflowRun[]>([]);
   const [loadingRuns, setLoadingRuns] = useState(false);
   const [downloadingRun, setDownloadingRun] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<'date' | 'accuracy' | 'name'>('date');
+  const [sortBy, setSortBy] = useState<"date" | "accuracy" | "name">("date");
   const [groupByModel, setGroupByModel] = useState(false);
+  const [selectedFileName, setSelectedFileName] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadModels = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/models');
+      const res = await fetch("/api/models");
       const data = await res.json();
       if (data.models) {
-        const modelList: ModelInfo[] = data.models.map((m: string | {name: string, url?: string}) => {
-          const name = typeof m === 'string' ? m : m.name;
-          return { name, url: `/media/models/${name}` };
-        });
+        const modelList: ModelInfo[] = data.models.map(
+          (m: string | { name: string; url?: string }) => {
+            const name = typeof m === "string" ? m : m.name;
+            return { name, url: `/media/models/${name}` };
+          },
+        );
         setModels(modelList);
       }
     } catch (err) {
-      console.error('Failed to load models:', err);
+      console.error("Failed to load models:", err);
     } finally {
       setLoading(false);
     }
@@ -56,136 +68,166 @@ export function ModelManagementWidget() {
     loadModels();
   }, [loadModels]);
 
-  const handleUpload = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const fileInput = form.elements.namedItem('modelFile') as HTMLInputElement;
-    const file = fileInput?.files?.[0];
-    
-    if (!file) {
-      setError('Выберите файл модели');
-      return;
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFileName(file.name);
+    } else {
+      setSelectedFileName("");
     }
+  };
 
-    if (!file.name.endsWith('.onnx')) {
-      setError('Загрузите файл .onnx');
-      return;
-    }
+  const handleCustomButtonClick = () => {
+    fileInputRef.current?.click();
+  };
 
-    setUploading(true);
-    setError(null);
-    setSuccess(null);
+  const handleUpload = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const fileInput = form.elements.namedItem(
+        "modelFile",
+      ) as HTMLInputElement;
+      const file = fileInput?.files?.[0];
 
-    const formData = new FormData();
-    formData.append('modelFile', file);
-
-    try {
-      const res = await fetch('/api/model-upload', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        setSuccess(`Модель ${file.name} успешно загружена!`);
-        fileInput.value = '';
-        loadModels();
-      } else {
-        setError(data.error || 'Ошибка загрузки');
+      if (!file) {
+        setError("Выберите файл модели");
+        return;
       }
-    } catch (err) {
-      setError('Ошибка загрузки');
-    } finally {
-      setUploading(false);
-    }
-  }, [loadModels]);
 
-  const handleDelete = useCallback(async (modelName: string) => {
-    if (!confirm(`Удалить модель ${modelName}?`)) return;
-
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const res = await fetch(`/api/model-delete?delete_model=${encodeURIComponent(modelName)}`, {
-        method: 'DELETE',
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        setSuccess(`Модель ${modelName} удалена`);
-        loadModels();
-      } else {
-        setError(data.error || 'Ошибка удаления');
+      if (!file.name.endsWith(".onnx")) {
+        setError("Загрузите файл .onnx");
+        return;
       }
-    } catch (err) {
-      setError('Ошибка удаления');
-    }
-  }, [loadModels]);
+
+      setUploading(true);
+      setError(null);
+      setSuccess(null);
+
+      const formData = new FormData();
+      formData.append("modelFile", file);
+
+      try {
+        const res = await fetch("/api/model-upload", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          setSuccess(`Модель ${file.name} успешно загружена!`);
+          fileInput.value = "";
+          setSelectedFileName("");
+          loadModels();
+        } else {
+          setError(data.error || "Ошибка загрузки");
+        }
+      } catch (err) {
+        setError("Ошибка загрузки");
+      } finally {
+        setUploading(false);
+      }
+    },
+    [loadModels],
+  );
+
+  const handleDelete = useCallback(
+    async (modelName: string) => {
+      if (!confirm(`Удалить модель ${modelName}?`)) return;
+
+      setError(null);
+      setSuccess(null);
+
+      try {
+        const res = await fetch(
+          `/api/model-delete?delete_model=${encodeURIComponent(modelName)}`,
+          {
+            method: "DELETE",
+          },
+        );
+        const data = await res.json();
+
+        if (data.success) {
+          setSuccess(`Модель ${modelName} удалена`);
+          loadModels();
+        } else {
+          setError(data.error || "Ошибка удаления");
+        }
+      } catch (err) {
+        setError("Ошибка удаления");
+      }
+    },
+    [loadModels],
+  );
 
   const openMlflowModal = useCallback(async () => {
     setShowMlflowModal(true);
     setLoadingRuns(true);
     try {
-      const res = await fetch('/api/mlflow-runs');
+      const res = await fetch("/api/mlflow-runs");
       const data = await res.json();
       setMlflowRuns(data.runs || []);
     } catch (err) {
-      console.error('Failed to load MLflow runs:', err);
+      console.error("Failed to load MLflow runs:", err);
     } finally {
       setLoadingRuns(false);
     }
   }, []);
 
-  const downloadFromMlflow = useCallback(async (runId: string) => {
-    setDownloadingRun(runId);
-    setError(null);
-    setSuccess(null);
+  const downloadFromMlflow = useCallback(
+    async (runId: string) => {
+      setDownloadingRun(runId);
+      setError(null);
+      setSuccess(null);
 
-    try {
-      const formData = new FormData();
-      formData.append('run_id', runId);
-      const res = await fetch('/api/mlflow-download', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
+      try {
+        const formData = new FormData();
+        formData.append("run_id", runId);
+        const res = await fetch("/api/mlflow-download", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
 
-      if (data.success) {
-        setSuccess(`Модель загружена из MLflow`);
-        loadModels();
-      } else {
-        setError(data.error || 'Ошибка загрузки из MLflow');
+        if (data.success) {
+          setSuccess(`Модель загружена из MLflow`);
+          loadModels();
+        } else {
+          setError(data.error || "Ошибка загрузки из MLflow");
+        }
+      } catch (err) {
+        setError("Ошибка загрузки из MLflow");
+      } finally {
+        setDownloadingRun(null);
       }
-    } catch (err) {
-      setError('Ошибка загрузки из MLflow');
-    } finally {
-      setDownloadingRun(null);
-    }
-  }, [loadModels]);
+    },
+    [loadModels],
+  );
 
   const getSortedAndGroupedRuns = useCallback(() => {
     let sorted = [...mlflowRuns];
 
     // Сортировка
     switch (sortBy) {
-      case 'accuracy':
+      case "accuracy":
         sorted.sort((a, b) => (b.accuracy || 0) - (a.accuracy || 0));
         break;
-      case 'name':
-        sorted.sort((a, b) => (a.model_name || '').localeCompare(b.model_name || ''));
+      case "name":
+        sorted.sort((a, b) =>
+          (a.model_name || "").localeCompare(b.model_name || ""),
+        );
         break;
-      case 'date':
+      case "date":
       default:
-        sorted.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        sorted.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
         break;
     }
 
     // Группировка
     if (groupByModel) {
       const grouped: { [key: string]: MlflowRun[] } = {};
-      sorted.forEach(run => {
-        const model = run.model_name || 'Unknown';
+      sorted.forEach((run) => {
+        const model = run.model_name || "Unknown";
         if (!grouped[model]) {
           grouped[model] = [];
         }
@@ -218,7 +260,26 @@ export function ModelManagementWidget() {
       <div className="section">
         <h3>Загрузить модель</h3>
         <form onSubmit={handleUpload}>
-          <input type="file" name="modelFile" accept=".onnx" />
+          <input
+            type="file"
+            name="modelFile"
+            accept=".onnx"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            style={{ display: "none" }}
+          />
+          <div className="custom-file-upload">
+            <button
+              type="button"
+              className="custom-file-button"
+              onClick={handleCustomButtonClick}
+            >
+              Выбрать файл .onnx
+            </button>
+            <span className="file-name">
+              {selectedFileName || "Файл не выбран"}
+            </span>
+          </div>
           <button type="submit" disabled={uploading}>
             {uploading ? (
               <>
@@ -258,7 +319,7 @@ export function ModelManagementWidget() {
               </tr>
             </thead>
             <tbody>
-              {models.map(model => (
+              {models.map((model) => (
                 <tr key={model.name}>
                   <td>{model.name}</td>
                   <td>
@@ -278,11 +339,17 @@ export function ModelManagementWidget() {
       </div>
 
       {showMlflowModal && (
-        <div className="modal-overlay" onClick={() => setShowMlflowModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
+        <div
+          className="modal-overlay"
+          onClick={() => setShowMlflowModal(false)}
+        >
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>MLflow модели</h3>
-              <button className="modal-close" onClick={() => setShowMlflowModal(false)}>
+              <button
+                className="modal-close"
+                onClick={() => setShowMlflowModal(false)}
+              >
                 <X size={20} />
               </button>
             </div>
@@ -299,7 +366,10 @@ export function ModelManagementWidget() {
                   <div className="filter-controls">
                     <div className="filter-group">
                       <label>Сортировка:</label>
-                      <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as any)}
+                      >
                         <option value="date">По дате</option>
                         <option value="accuracy">По точности</option>
                         <option value="name">По названию</option>
@@ -310,7 +380,7 @@ export function ModelManagementWidget() {
                         <input
                           type="checkbox"
                           checked={groupByModel}
-                          onChange={e => setGroupByModel(e.target.checked)}
+                          onChange={(e) => setGroupByModel(e.target.checked)}
                         />
                         Группировать по модели
                       </label>
@@ -318,30 +388,122 @@ export function ModelManagementWidget() {
                   </div>
 
                   <div className="runs-list">
-                    {groupByModel ? (
-                      Object.entries(getSortedAndGroupedRuns() as { [key: string]: MlflowRun[] }).map(([modelName, runs]) => (
-                        <div key={modelName} className="model-group">
-                          <h4 className="group-title">{modelName} ({runs.length})</h4>
-                          {runs.map(run => (
+                    {groupByModel
+                      ? Object.entries(
+                          getSortedAndGroupedRuns() as {
+                            [key: string]: MlflowRun[];
+                          },
+                        ).map(([modelName, runs]) => (
+                          <div key={modelName} className="model-group">
+                            <h4 className="group-title">
+                              {modelName} ({runs.length})
+                            </h4>
+                            {runs.map((run) => (
+                              <div key={run.run_id} className="run-item">
+                                <div className="run-info">
+                                  <div className="run-metrics">
+                                    {run.accuracy !== null &&
+                                      run.accuracy !== undefined && (
+                                        <span className="metric">
+                                          Accuracy:{" "}
+                                          {(run.accuracy * 100).toFixed(2)}%
+                                        </span>
+                                      )}
+                                    {run.precision !== null &&
+                                      run.precision !== undefined && (
+                                        <span className="metric">
+                                          Precision:{" "}
+                                          {(run.precision * 100).toFixed(2)}%
+                                        </span>
+                                      )}
+                                    {run.recall !== null &&
+                                      run.recall !== undefined && (
+                                        <span className="metric">
+                                          Recall:{" "}
+                                          {(run.recall * 100).toFixed(2)}%
+                                        </span>
+                                      )}
+                                    {run.f1_score !== null &&
+                                      run.f1_score !== undefined && (
+                                        <span className="metric">
+                                          F1: {(run.f1_score * 100).toFixed(2)}%
+                                        </span>
+                                      )}
+                                  </div>
+                                  <div className="run-meta">
+                                    <span className="run-date">
+                                      {run.date || "N/A"}
+                                    </span>
+                                    <span className="run-id-short">
+                                      {run.run_id.substring(0, 8)}...
+                                    </span>
+                                  </div>
+                                </div>
+                                <button
+                                  className="download-btn"
+                                  onClick={() => downloadFromMlflow(run.run_id)}
+                                  disabled={downloadingRun === run.run_id}
+                                >
+                                  {downloadingRun === run.run_id ? (
+                                    <Loader2 className="spin" size={16} />
+                                  ) : (
+                                    <Download size={16} />
+                                  )}
+                                  Загрузить
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ))
+                      : (getSortedAndGroupedRuns() as MlflowRun[]).map(
+                          (run) => (
                             <div key={run.run_id} className="run-item">
                               <div className="run-info">
-                                <div className="run-metrics">
-                                  {run.accuracy !== null && run.accuracy !== undefined && (
-                                    <span className="metric">Accuracy: {(run.accuracy * 100).toFixed(2)}%</span>
-                                  )}
-                                  {run.precision !== null && run.precision !== undefined && (
-                                    <span className="metric">Precision: {(run.precision * 100).toFixed(2)}%</span>
-                                  )}
-                                  {run.recall !== null && run.recall !== undefined && (
-                                    <span className="metric">Recall: {(run.recall * 100).toFixed(2)}%</span>
-                                  )}
-                                  {run.f1_score !== null && run.f1_score !== undefined && (
-                                    <span className="metric">F1: {(run.f1_score * 100).toFixed(2)}%</span>
+                                <div className="run-header">
+                                  <span className="model-name">
+                                    {run.model_name || "Unknown"}
+                                  </span>
+                                  {run.optimizer && (
+                                    <span className="optimizer">
+                                      {run.optimizer}
+                                    </span>
                                   )}
                                 </div>
+                                <div className="run-metrics">
+                                  {run.accuracy !== null &&
+                                    run.accuracy !== undefined && (
+                                      <span className="metric">
+                                        Accuracy:{" "}
+                                        {(run.accuracy * 100).toFixed(2)}%
+                                      </span>
+                                    )}
+                                  {run.precision !== null &&
+                                    run.precision !== undefined && (
+                                      <span className="metric">
+                                        Precision:{" "}
+                                        {(run.precision * 100).toFixed(2)}%
+                                      </span>
+                                    )}
+                                  {run.recall !== null &&
+                                    run.recall !== undefined && (
+                                      <span className="metric">
+                                        Recall: {(run.recall * 100).toFixed(2)}%
+                                      </span>
+                                    )}
+                                  {run.f1_score !== null &&
+                                    run.f1_score !== undefined && (
+                                      <span className="metric">
+                                        F1: {(run.f1_score * 100).toFixed(2)}%
+                                      </span>
+                                    )}
+                                </div>
                                 <div className="run-meta">
-                                  <span className="run-date">{run.date || 'N/A'}</span>
-                                  <span className="run-id-short">{run.run_id.substring(0, 8)}...</span>
+                                  <span className="run-date">
+                                    {run.date || "N/A"}
+                                  </span>
+                                  <span className="run-id-short">
+                                    {run.run_id.substring(0, 8)}...
+                                  </span>
                                 </div>
                               </div>
                               <button
@@ -357,51 +519,8 @@ export function ModelManagementWidget() {
                                 Загрузить
                               </button>
                             </div>
-                          ))}
-                        </div>
-                      ))
-                    ) : (
-                      (getSortedAndGroupedRuns() as MlflowRun[]).map(run => (
-                        <div key={run.run_id} className="run-item">
-                          <div className="run-info">
-                            <div className="run-header">
-                              <span className="model-name">{run.model_name || 'Unknown'}</span>
-                              {run.optimizer && <span className="optimizer">{run.optimizer}</span>}
-                            </div>
-                            <div className="run-metrics">
-                              {run.accuracy !== null && run.accuracy !== undefined && (
-                                <span className="metric">Accuracy: {(run.accuracy * 100).toFixed(2)}%</span>
-                              )}
-                              {run.precision !== null && run.precision !== undefined && (
-                                <span className="metric">Precision: {(run.precision * 100).toFixed(2)}%</span>
-                              )}
-                              {run.recall !== null && run.recall !== undefined && (
-                                <span className="metric">Recall: {(run.recall * 100).toFixed(2)}%</span>
-                              )}
-                              {run.f1_score !== null && run.f1_score !== undefined && (
-                                <span className="metric">F1: {(run.f1_score * 100).toFixed(2)}%</span>
-                              )}
-                            </div>
-                            <div className="run-meta">
-                              <span className="run-date">{run.date || 'N/A'}</span>
-                              <span className="run-id-short">{run.run_id.substring(0, 8)}...</span>
-                            </div>
-                          </div>
-                          <button
-                            className="download-btn"
-                            onClick={() => downloadFromMlflow(run.run_id)}
-                            disabled={downloadingRun === run.run_id}
-                          >
-                            {downloadingRun === run.run_id ? (
-                              <Loader2 className="spin" size={16} />
-                            ) : (
-                              <Download size={16} />
-                            )}
-                            Загрузить
-                          </button>
-                        </div>
-                      ))
-                    )}
+                          ),
+                        )}
                   </div>
                 </>
               )}

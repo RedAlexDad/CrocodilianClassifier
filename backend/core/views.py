@@ -11,7 +11,8 @@ import os
 import boto3
 
 MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000")
-MLFLOW_BUCKET = "crocodilian-artifacts"
+MLFLOW_BUCKET = "crocodilian"
+MLFLOW_PREFIX = "mlflow-artifacts/"
 
 # Классы по вашему варианту: крокодил, аллигатор, кайман
 imageClassList = {"0": "Крокодил", "1": "Аллигатор", "2": "Кайман"}
@@ -67,13 +68,16 @@ def get_mlflow_runs_api(request):
         )
 
         bucket = MLFLOW_BUCKET
-        response = s3.list_objects_v2(Bucket=bucket, Prefix="")
+        response = s3.list_objects_v2(Bucket=bucket, Prefix=MLFLOW_PREFIX)
 
         runs_dict = {}
         for obj in response.get("Contents", []):
             key = obj["Key"]
-            if "/artifacts/" in key:
-                parts = key.split("/")
+            # Убираем префикс mlflow-artifacts/
+            relative_key = key.replace(MLFLOW_PREFIX, "")
+
+            if "/artifacts/" in relative_key:
+                parts = relative_key.split("/")
                 if len(parts) >= 3:
                     exp_id = parts[0]
                     run_id = parts[1]
@@ -160,11 +164,11 @@ def download_mlflow_model_api(request):
         )
 
         bucket = MLFLOW_BUCKET
-        # Ищем модель в разных возможных путях
+        # Ищем модель в разных возможных путях с учетом префикса mlflow-artifacts/
         possible_prefixes = [
-            f"{run_id}/artifacts/",
-            f"1/{run_id}/artifacts/",
-            f"0/{run_id}/artifacts/",
+            f"{MLFLOW_PREFIX}{run_id}/artifacts/",
+            f"{MLFLOW_PREFIX}1/{run_id}/artifacts/",
+            f"{MLFLOW_PREFIX}0/{run_id}/artifacts/",
         ]
 
         onnx_key = None
