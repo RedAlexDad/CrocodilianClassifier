@@ -460,11 +460,6 @@ def predictImageData(modelName, filePath):
         if not modelName:
             return "Ошибка: модель не выбрана"
 
-        # Загрузка и предобработка изображения
-        img = Image.open(default_storage.open(filePath)).convert("RGB")
-        img = img.resize((32, 32), Image.LANCZOS)
-        img = np.asarray(img, dtype=np.float32)
-
         # Загрузка модели из S3
         storage = default_storage
         model_base_name = modelName.replace(".onnx", "")
@@ -497,6 +492,22 @@ def predictImageData(modelName, filePath):
                 d.dim_value if d.dim_value != 0 else -1
                 for d in onnx_model.graph.input[0].type.tensor_type.shape.dim
             ]
+
+            # Определяем размер входа модели (height, width)
+            if len(input_shape) == 4:
+                if input_shape[1] == 3:  # NCHW: [batch, channels, height, width]
+                    img_size = input_shape[2] if input_shape[2] > 0 else 32
+                elif input_shape[3] == 3:  # NHWC: [batch, height, width, channels]
+                    img_size = input_shape[1] if input_shape[1] > 0 else 32
+                else:
+                    img_size = 32
+            else:
+                img_size = 32
+
+            # Загрузка и предобработка изображения с правильным размером
+            img = Image.open(default_storage.open(filePath)).convert("RGB")
+            img = img.resize((img_size, img_size), Image.LANCZOS)
+            img = np.asarray(img, dtype=np.float32)
 
             # Подтягиваем внешние тензоры из tmp_dir в protobuf (один буфер для ORT)
             try:
