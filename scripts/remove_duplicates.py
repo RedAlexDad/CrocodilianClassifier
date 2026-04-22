@@ -122,7 +122,7 @@ def main():
     
     removed = find_duplicates(args.data_dir, args.threshold, args.dry_run)
     
-    return 0 if args.dry_run else removed
+    return 0
 
 
 if __name__ == '__main__':
