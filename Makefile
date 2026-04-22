@@ -364,6 +364,15 @@ dataset-stats: ## Статистика датасета
 		echo "  $$class: $$count изображений"; \
 	done
 
+dataset-check-duplicates: ## Проверить дубликаты в датасете (без удаления)
+	@echo "$(GREEN)Проверка дубликатов в датасете...$(NC)"
+	$(PYTHON) scripts/remove_duplicates.py --data-dir $(DATA_DIR) --dry-run
+
+dataset-remove-duplicates: ## Удалить дубликаты из датасета
+	@echo "$(YELLOW)Удаление дубликатов из датасета...$(NC)"
+	$(PYTHON) scripts/remove_duplicates.py --data-dir $(DATA_DIR)
+	@echo "$(GREEN)✓ Дубликаты удалены$(NC)"
+
 # ==============================================================================
 # Установка
 # ==============================================================================
