@@ -45,8 +45,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
-  width: 100%;
+  flex: 1;
 }
 
 .custom-file-button {
