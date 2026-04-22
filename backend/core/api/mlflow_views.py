@@ -34,17 +34,22 @@ def download_mlflow_model_api(request):
 
     try:
         local_path, model_name = download_mlflow_model(run_id)
-        
+
         if not local_path:
             return JsonResponse({"error": model_name}, status=404)
 
         storage = default_storage
-        model_key = f"models/{model_name}"
+
+        # Добавляем run_id к имени файла для уникальности
+        base_name = model_name.replace(".onnx", "")
+        unique_model_name = f"{base_name}_{run_id[:8]}.onnx"
+        model_key = f"models/{unique_model_name}"
+
         with open(local_path, "rb") as f:
             storage.save(model_key, ContentFile(f.read()))
 
         os.remove(local_path)
 
-        return JsonResponse({"success": True, "model": model_name})
+        return JsonResponse({"success": True, "model": unique_model_name})
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)

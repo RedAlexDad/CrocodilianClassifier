@@ -20,17 +20,17 @@ IMAGE_CLASS_LIST = {"0": "Крокодил", "1": "Аллигатор", "2": "К
 def predict_image(model_name, file_path):
     """
     Загрузка ONNX модели и предсказание класса изображения
-    
+
     Args:
         model_name: Имя ONNX модели
         file_path: Путь к изображению в хранилище
-        
+
     Returns:
-        str: Результат классификации или сообщение об ошибке
+        dict: {"predicted_class": int, "confidence": float} или {"error": str}
     """
     try:
         if not model_name:
-            return "Ошибка: модель не выбрана"
+            return {"error": "Ошибка: модель не выбрана"}
 
         # Загрузка модели из S3
         storage = default_storage
@@ -54,7 +54,7 @@ def predict_image(model_name, file_path):
             # Путь к основному файлу модели
             tmp_model_path = os.path.join(tmp_dir, model_name)
             if not os.path.isfile(tmp_model_path):
-                return f"Ошибка: модель «{model_name}» не найдена в хранилище"
+                return {"error": f"Ошибка: модель «{model_name}» не найдена в хранилище"}
 
             # Загружаем модель и определяем размер входа
             onnx_model = onnx.load(tmp_model_path, load_external_data=False)
@@ -84,10 +84,10 @@ def predict_image(model_name, file_path):
                         tmp_model_path, providers=["CPUExecutionProvider"]
                     )
                 except Exception:
-                    return (
-                        f"Ошибка: не удалось загрузить веса модели «{model_name}» "
+                    return {
+                        "error": f"Ошибка: не удалось загрузить веса модели «{model_name}» "
                         f"(внешние данные ONNX). Детали: {ext_err}"
-                    )
+                    }
 
             # Определение формата: NCHW или NHWC
             if len(input_shape) == 4 and input_shape[3] == 3:
@@ -112,10 +112,19 @@ def predict_image(model_name, file_path):
             # Инференс
             input_name = sess.get_inputs()[0].name
             output = sess.run(None, {input_name: img})
-            predicted_class = np.argmax(output[0])
+            predicted_class = int(np.argmax(output[0]))
 
-            score = IMAGE_CLASS_LIST[str(predicted_class)]
-            return score
+            # Вычисляем confidence
+            probabilities = output[0][0]
+            if len(probabilities.shape) > 0:
+                confidence = float(np.max(probabilities))
+            else:
+                confidence = 1.0
+
+            return {
+                "predicted_class": predicted_class,
+                "confidence": confidence,
+            }
 
         finally:
             # Удаление временной директории со всеми файлами
@@ -123,7 +132,7 @@ def predict_image(model_name, file_path):
                 shutil.rmtree(tmp_dir)
 
     except Exception as e:
-        return f"Ошибка: {str(e)}"
+        return {"error": f"Ошибка: {str(e)}"}
 
 
 def _get_input_size(input_shape):
