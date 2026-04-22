@@ -42,12 +42,23 @@ def predict_existing_image_api(request):
 
     try:
         from django.core.files.storage import default_storage
-        
-        score_prediction = predict_image(model_name, image_path)
+
+        result = predict_image(model_name, image_path)
+
+        if "error" in result:
+            return JsonResponse(result, status=500)
+
+        # Преобразуем predicted_class в название класса
+        imageClassList = {"0": "Крокодил", "1": "Аллигатор", "2": "Кайман"}
+        predicted_class = result["predicted_class"]
+        confidence = result["confidence"]
+        class_name = imageClassList.get(str(predicted_class), "Unknown")
+
         image_url = default_storage.url(image_path)
 
         return JsonResponse({
-            "scorePrediction": score_prediction,
+            "scorePrediction": class_name,
+            "confidence": f"{confidence:.2%}",
             "image_url": image_url,
             "current_model": model_name
         })
