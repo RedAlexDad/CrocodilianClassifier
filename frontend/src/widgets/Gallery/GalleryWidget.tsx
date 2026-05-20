@@ -1,5 +1,6 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
+import { CLASS_COLORS, drawMasksOnCanvas, type Detection } from '@/features/segmentation/segmentUtils';
 import './GalleryWidget.css';
 
 interface ImageItem {
@@ -24,22 +25,22 @@ export function GalleryWidget() {
   const [isPredicting, setIsPredicting] = useState(false);
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [selectedModel, setSelectedModel] = useState('');
+  const [segDetections, setSegDetections] = useState<Detection[]>([]);
+  const [isSegmenting, setIsSegmenting] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const segImageRef = useRef<HTMLImageElement>(null);
 
   const loadImages = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      console.log('Загрузка изображений из /api/images...');
       const response = await fetch('/api/images');
-      console.log('Ответ от /api/images:', response.status);
       if (!response.ok) {
         throw new Error(`Ошибка ${response.status}`);
       }
       const data = await response.json();
-      console.log('Получено изображений:', data.images?.length || 0);
       setImages(data.images || []);
     } catch (err) {
-      console.error('Ошибка загрузки изображений:', err);
       setError((err as Error).message || 'Ошибка загрузки изображений');
     } finally {
       setIsLoading(false);
@@ -70,14 +71,13 @@ export function GalleryWidget() {
   const handleImageClick = useCallback(async (image: ImageItem) => {
     setSelectedImage(image);
     setPrediction(null);
+    setSegDetections([]);
     setIsPredicting(true);
 
     try {
       const response = await fetch('/api/predict-existing', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           image_path: `images/${image.filename}`,
           model_name: selectedModel,
@@ -97,6 +97,41 @@ export function GalleryWidget() {
       setIsPredicting(false);
     }
   }, [selectedModel]);
+
+  const handleSegment = useCallback(async () => {
+    if (!selectedImage) return;
+    setIsSegmenting(true);
+    setSegDetections([]);
+
+    try {
+      const response = await fetch('/api/segment-existing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image_path: `images/${selectedImage.filename}`,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || `Ошибка ${response.status}`);
+      }
+
+      const data = await response.json();
+      setSegDetections(data.detections || []);
+    } catch (err) {
+      setError((err as Error).message || 'Ошибка сегментации');
+    } finally {
+      setIsSegmenting(false);
+    }
+  }, [selectedImage]);
+
+  const drawSegCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    const img = segImageRef.current;
+    if (!canvas || !img || segDetections.length === 0) return;
+    drawMasksOnCanvas(canvas, img, segDetections);
+  }, [segDetections]);
 
   return (
     <div className="gallery-widget">
@@ -124,7 +159,7 @@ export function GalleryWidget() {
           </div>
         )}
 
-        {error && !isPredicting && (
+        {error && (
           <div className="message error">{error}</div>
         )}
 
@@ -171,6 +206,51 @@ export function GalleryWidget() {
                 <div className="prediction">{prediction.scorePrediction}</div>
                 <p className="model-used">Модель: {prediction.current_model}</p>
               </div>
+            </div>
+            <div className="segment-action">
+              <button
+                className="btn btn-segment"
+                onClick={handleSegment}
+                disabled={isSegmenting}
+              >
+                {isSegmenting ? 'Сегментация...' : 'Сегментировать'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {isSegmenting && (
+          <div className="loading">
+            <Loader2 className="spin" />
+            <p>Сегментация...</p>
+          </div>
+        )}
+
+        {segDetections.length > 0 && selectedImage && (
+          <div className="result seg-result">
+            <h3>Результат сегментации:</h3>
+            <div className="canvas-container">
+              <canvas ref={canvasRef} className="segment-canvas" />
+              <img
+                ref={segImageRef}
+                src={selectedImage.url}
+                alt={selectedImage.filename}
+                className="hidden-img"
+                onLoad={drawSegCanvas}
+                crossOrigin="anonymous"
+              />
+            </div>
+            <div className="seg-detections">
+              {segDetections.map((det, idx) => {
+                const color = CLASS_COLORS[det.class_id] || { r: 128, g: 128, b: 128 };
+                return (
+                  <div key={idx} className="seg-item">
+                    <span className="color-badge" style={{ backgroundColor: `rgb(${color.r},${color.g},${color.b})` }} />
+                    <span className="class-name">{det.class_name}</span>
+                    <span className="confidence">{(det.confidence * 100).toFixed(1)}%</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

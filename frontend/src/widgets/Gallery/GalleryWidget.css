@@ -185,6 +185,94 @@
   margin: 0 auto;
 }
 
+.segment-action {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #bbf7d0;
+}
+
+.btn-segment {
+  padding: 10px 20px;
+  background: #059669;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.btn-segment:hover:not(:disabled) {
+  background: #047857;
+}
+
+.btn-segment:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.seg-result {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.seg-result h3 {
+  color: #1e40af;
+}
+
+.canvas-container {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 16px;
+}
+
+.segment-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.hidden-img {
+  display: none;
+}
+
+.seg-detections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.seg-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.color-badge {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.class-name {
+  font-weight: 600;
+  color: #111827;
+  font-size: 14px;
+}
+
+.confidence {
+  color: #059669;
+  font-weight: 600;
+  font-size: 13px;
+}
+
 @media (max-width: 768px) {
   .images-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
