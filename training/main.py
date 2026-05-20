@@ -37,9 +37,9 @@ def main():
 
 Сегментация:
   python main.py --task segment --model yolov8n-seg --epochs 50 --batch 4
-  python main.py --task segment --model yolov8s-seg --optimizer SGD --lr 0.01 --epochs 100 --batch 8
-  python main.py --task segment --model yolov8m-seg --epochs 100 --batch 8
-  python main.py --task segment --model yolov8l-seg --optimizer SGD --lr 0.01 --epochs 100 --batch 4
+  python main.py --task segment --model yolov8n-seg-sgd --epochs 50 --batch 4
+  python main.py --task segment --model yolov8n-seg-adam --epochs 50 --batch 4
+  python main.py --task segment --model yolov8n-seg-long --epochs 100 --batch 4
         """,
     )
     parser.add_argument(
@@ -101,7 +101,7 @@ def main():
             lr=args.lr or cfg["default_lr"],
             epochs=args.epochs or cfg["default_epochs"],
             imgsz=args.imgsz or 640,
-            batch=args.batch or cfg["default_batch"],
+            batch=args.batch_size or cfg["default_batch"],
             device=args.device,
             prepare=not args.no_prepare,
         )
