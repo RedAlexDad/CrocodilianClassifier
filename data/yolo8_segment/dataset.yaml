@@ -1,0 +1,9 @@
+path: /home/redalexdad/GitHub/CrocodilianClassifier/data/yolo8_segment
+train: images/train
+val: images/val
+
+nc: 3
+names:
+  0: alligator
+  1: cayman
+  2: crocodile
