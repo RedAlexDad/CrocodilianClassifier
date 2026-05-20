@@ -40,7 +40,7 @@ data/dataset/obj_train_data/
 | # | Модель | epochs | batch | Optimizer | LR | Статус |
 |---|--------|--------|-------|-----------|----|--------|
 | 1 | yolov8n-seg | 20 | 8 | Adam | 0.001 | ✅ mAP50=0.803 |
-| 2 | yolov8n-seg | 20 | 8 | SGD | 0.01 | ⏳ |
+| 2 | yolov8n-seg | 20 | 8 | SGD | 0.01 | ✅ mAP50=0.877 |
 | 3 | yolov8n-seg | 20 | 8 | AdamW | 0.001 | ⏳ |
 | 4 | yolov8n-seg | 50 | 16 | Adam | 0.001 | ⏳ |
 | 5 | yolov8n-seg | 50 | 16 | SGD | 0.01 | ⏳ |
@@ -59,7 +59,20 @@ data/dataset/obj_train_data/
 **Модель:** `yolo8_segment/yolov8n-seg-e20-bs8-adam/weights/best.pt`  
 **Время обучения:** 0.060 часов (20 эпох, GTX 1650 Ti)
 
-- [ ] Запустить оставшиеся 5 тренировок (SGD, AdamW, и т.д.)
+**Запуск 2 (SGD, 20 эпох, batch=8) — Результаты:**
+
+| Класс | Precision | Recall | Box mAP50 | Box mAP50-95 | Mask mAP50 | Mask mAP50-95 |
+|-------|-----------|--------|-----------|--------------|------------|---------------|
+| alligator | 0.887 | 0.788 | 0.926 | 0.817 | 0.926 | 0.791 |
+| cayman | 0.609 | 1.000 | 0.995 | 0.898 | 0.995 | 0.911 |
+| crocodile | 0.458 | 0.625 | 0.708 | 0.595 | 0.708 | 0.607 |
+| **all** | **0.651** | **0.804** | **0.877** | **0.770** | **0.877** | **0.770** |
+
+**MLflow:** http://localhost:5000/#/experiments/2/runs/ba4d83e982294fb6959e0d4fffe0477e  
+**Модель:** `yolo8_segment/yolov8n-seg-sgd-e20-bs8-sgd/weights/best.pt`  
+**Время обучения:** 0.059 часов (20 эпох, GTX 1650 Ti)
+
+- [ ] Запустить оставшиеся 4 тренировки (AdamW 20ep, и 3×50ep)
 - [ ] Сравнить метрики: mAP@0.5, mAP@0.5:0.95, precision, recall
 - [ ] Выбрать лучшую модель по mAP
 
