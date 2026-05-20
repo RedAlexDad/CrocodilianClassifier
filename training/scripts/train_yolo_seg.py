@@ -20,7 +20,7 @@ from ultralytics import YOLO
 
 import mlflow
 from utils.mlflow_utils import setup_mlflow
-from utils.yolo_data import prepare_dataset
+from utils.yolo_data import prepare_dataset, prepare_coco_dataset
 from configs.config import BASE_DIR as ROOT_DIR
 
 
@@ -31,14 +31,16 @@ MODEL_ALIASES = {
     "yolov8n-seg-long":       "yolov8n-seg.pt",
     "yolov8n-seg-long-sgd":  "yolov8n-seg.pt",
     "yolov8n-seg-long-adamw":"yolov8n-seg.pt",
+    "yolov8n-seg-coco-adamw":"yolov8n-seg.pt",
 }
 
 YOLO_MODELS = list(MODEL_ALIASES.keys())
 
 SEGMENT_CONFIGS = {
-    "yolov8n-seg": {"default_optimizer": "AdamW", "default_epochs": 50,  "default_batch": 4,  "default_lr": 0.001},
-    "yolov8s-seg": {"default_optimizer": "SGD",   "default_epochs": 100,  "default_batch": 8,  "default_lr": 0.01},
-    "yolov8m-seg": {"default_optimizer": "Adam",  "default_epochs": 100,  "default_batch": 8,  "default_lr": 0.001},
+    "yolov8n-seg":            {"default_optimizer": "AdamW", "default_epochs": 50,  "default_batch": 4, "default_lr": 0.001},
+    "yolov8s-seg":            {"default_optimizer": "SGD",   "default_epochs": 100, "default_batch": 8, "default_lr": 0.01},
+    "yolov8m-seg":            {"default_optimizer": "Adam",  "default_epochs": 100, "default_batch": 8, "default_lr": 0.001},
+    "yolov8n-seg-coco-adamw": {"default_optimizer": "AdamW", "default_epochs": 50,  "default_batch": 8, "default_lr": 0.0005},
 }
 
 
@@ -71,11 +73,16 @@ def train_yolo_segment(
     prepare: bool = True,
 ) -> dict:
     """Запустить обучение YOLOv8-segment. Returns dict with final metrics."""
-    dataset_dir = ROOT_DIR / "data" / "yolo8_segment"
+    is_coco = "coco" in model_name
+    dataset_dir = ROOT_DIR / "data" / ("yolo_seg_v2" if is_coco else "yolo8_segment")
 
     if prepare:
-        print("  Preparing dataset (bbox -> polygon)...")
-        prepare_dataset()
+        if is_coco:
+            print("  Preparing COCO dataset (RLE -> polygon)...")
+            prepare_coco_dataset()
+        else:
+            print("  Preparing dataset (bbox -> polygon)...")
+            prepare_dataset()
 
     yaml_path = create_dataset_yaml(dataset_dir)
 

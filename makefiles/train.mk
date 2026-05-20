@@ -55,5 +55,8 @@ train-yolo-xl: ## Run #5: yolov8n-seg 50ep SGD lr=0.0005 batch=8
 train-yolo-xxl: ## Run #6: yolov8n-seg 50ep AdamW lr=0.0005 batch=8
 	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-long-adamw --optimizer AdamW --lr 0.0005 --epochs 50 --batch 8 --device $(DEVICE)
 
+train-yolo-coco: ## YOLOv8-seg COCO RLE датасет: yolov8n 50ep AdamW lr=0.0005 batch=8
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-coco-adamw --optimizer AdamW --lr 0.0005 --epochs 50 --batch 8 --device $(DEVICE)
+
 train-compared: ## Сравнить все оптимизаторы
 	cd $(TRAINING_DIR) && $(PYTHON) main.py --model all --compare-optimizers
