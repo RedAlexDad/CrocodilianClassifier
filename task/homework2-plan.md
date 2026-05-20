@@ -39,7 +39,7 @@ data/dataset/obj_train_data/
 
 | # | Модель | imgsz | epochs | batch | Optimizer | LR | Статус |
 |---|--------|-------|--------|-------|-----------|----|--------|
-| 1 | yolov8n-seg | 640 | 50 | 4 | AdamW(auto) | 0.00143 | ✅ Завершено |
+| 1 | yolov8n-seg | 640 | 50 | 4 | AdamW(auto) | 0.00143 | ✅ mAP50=0.912 |
 | 2 | yolov8s-seg | 640 | 100 | 8 | SGD | 0.01 | ⏳ |
 | 3 | yolov8n-seg | 640 | 50 | 8 | SGD | 0.01 | ⏳ |
 | 4 | yolov8s-seg | 640 | 100 | 8 | Adam | 0.001 | ⏳ |
