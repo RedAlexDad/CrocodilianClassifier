@@ -27,203 +27,99 @@ data/dataset/obj_train_data/
 
 ---
 
-## Этап 2. Обучение YOLOv8-segment (6 запусков)
+## Этап 2. Обучение YOLOv8-segment (6 запусков) ✅
 
-### 2.1 Создание окружения
-- [x] Создать `data/yolo8_segment/` — папка с датасетом в формате YOLO
-- [x] Скрипт конвертации `scripts/convert_to_yolo_seg.py` (bbox → polygon)
-- [x] MLflow трекинг интегрирован (`training/utils/mlflow_utils.py`)
-- [x] Скрипт обучения `scripts/train_yolo_seg.py`
+### 2.1 Создание окружения ✅
+- [x] `data/yolo8_segment/` — датасет в формате YOLO
+- [x] `scripts/convert_to_yolo_seg.py` — bbox → polygon
+- [x] MLflow трекинг интегрирован
+- [x] `scripts/train_yolo_seg.py` — скрипт обучения
 
-### 2.2 Запуск 6 тренировок с разными параметрами
+### 2.2 Запуск 6 тренировок ✅
 
-| # | Модель | epochs | batch | Optimizer | LR | Статус |
-|---|--------|--------|-------|-----------|----|--------|
-| 1 | yolov8n-seg | 20 | 8 | Adam | 0.001 | ✅ mAP50=0.803 |
-| 2 | yolov8n-seg | 20 | 8 | SGD | 0.01 | ✅ mAP50=0.877 |
-| 3 | yolov8n-seg | 20 | 8 | AdamW | 0.001 | ✅ mAP50=0.749 |
-| 4 | yolov8n-seg | 50 | 8 | Adam | 0.0005 | ✅ mAP50=0.900 |
-| 5 | yolov8n-seg | 50 | 8 | SGD | 0.0005 | ✅ mAP50=0.685 |
-| 6 | yolov8n-seg | 50 | 8 | AdamW | 0.0005 | ✅ mAP50=0.905 |
-
-**Запуск 1 (Adam, 20 эпох, batch=8) — Результаты:**
-
-| Класс | Precision | Recall | Box mAP50 | Box mAP50-95 | Mask mAP50 | Mask mAP50-95 |
-|-------|-----------|--------|-----------|--------------|------------|---------------|
-| alligator | 0.802 | 0.813 | 0.811 | 0.709 | 0.811 | 0.692 |
-| cayman | 0.871 | 1.000 | 0.963 | 0.829 | 0.963 | 0.793 |
-| crocodile | 0.656 | 0.500 | 0.634 | 0.544 | 0.634 | 0.531 |
-| **all** | **0.777** | **0.771** | **0.803** | **0.694** | **0.803** | **0.672** |
-
-**MLflow:** http://localhost:5000/#/experiments/2/runs/64b063dc25f341cb96cb4676ab78e7a4  
-**Модель:** `yolo8_segment/yolov8n-seg-e20-bs8-adam/weights/best.pt`  
-**Время обучения:** 0.060 часов (20 эпох, GTX 1650 Ti)
-
-**Запуск 2 (SGD, 20 эпох, batch=8) — Результаты:**
-
-| Класс | Precision | Recall | Box mAP50 | Box mAP50-95 | Mask mAP50 | Mask mAP50-95 |
-|-------|-----------|--------|-----------|--------------|------------|---------------|
-| alligator | 0.887 | 0.788 | 0.926 | 0.817 | 0.926 | 0.791 |
-| cayman | 0.609 | 1.000 | 0.995 | 0.898 | 0.995 | 0.911 |
-| crocodile | 0.458 | 0.625 | 0.708 | 0.595 | 0.708 | 0.607 |
-| **all** | **0.651** | **0.804** | **0.877** | **0.770** | **0.877** | **0.770** |
-
-**MLflow:** http://localhost:5000/#/experiments/2/runs/ba4d83e982294fb6959e0d4fffe0477e  
-**Модель:** `yolo8_segment/yolov8n-seg-sgd-e20-bs8-sgd/weights/best.pt`  
-**Время обучения:** 0.059 часов (20 эпох, GTX 1650 Ti)
-
-**Запуск 3 (AdamW, 20 эпох, batch=8) — Результаты:**
-
-| Класс | Precision | Recall | Box mAP50 | Box mAP50-95 | Mask mAP50 | Mask mAP50-95 |
-|-------|-----------|--------|-----------|--------------|------------|---------------|
-| alligator | 0.670 | 0.815 | 0.752 | 0.651 | 0.752 | 0.649 |
-| cayman | 0.464 | 1.000 | 0.915 | 0.804 | 0.915 | 0.797 |
-| crocodile | 0.295 | 0.625 | 0.579 | 0.505 | 0.579 | 0.502 |
-| **all** | **0.476** | **0.813** | **0.749** | **0.653** | **0.749** | **0.649** |
-
-**MLflow:** http://localhost:5000/#/experiments/2/runs/aff0bd6a12c84e668a02224ad8a0ae0f  
-**Модель:** `yolo8_segment/yolov8n-seg-adamw-e20-bs8-adamw/weights/best.pt`  
-**Время обучения:** 0.060 часов (20 эпох, GTX 1650 Ti)
-
-**Сводка 20-эпохных запусков (mAP50):**
-| Оптимизатор | Box mAP50 | Mask mAP50 |
-|-------------|-----------|------------|
-| SGD | **0.877** | **0.877** |
-| Adam | 0.803 | 0.803 |
-| AdamW | 0.749 | 0.749 |
-
-**Запуск 4 (Adam, 50 эпох, batch=8, lr=0.0005) — Результаты:**
-
-| Класс | Precision | Recall | Box mAP50 | Box mAP50-95 | Mask mAP50 | Mask mAP50-95 |
-|-------|-----------|--------|-----------|--------------|------------|---------------|
-| alligator | 1.000 | 0.880 | 0.945 | 0.854 | 0.945 | 0.829 |
-| cayman | 0.827 | 1.000 | 0.977 | 0.891 | 0.977 | 0.853 |
-| crocodile | 0.831 | 0.616 | 0.779 | 0.705 | 0.779 | 0.680 |
-| **all** | **0.886** | **0.832** | **0.900** | **0.817** | **0.900** | **0.787** |
-
-**MLflow:** http://localhost:5000/#/experiments/2/runs/37b59dd9af94486f99b6dc654d83e6e0  
-**Модель:** `yolo8_segment/yolov8n-seg-long-e50-bs8-adam/weights/best.pt`  
-**Время обучения:** 0.148 часов (50 эпох, GTX 1650 Ti)
-
-**Запуск 5 (SGD, 50 эпох, batch=8, lr=0.0005) — Результаты:**
-
-| Класс | Precision | Recall | Box mAP50 | Box mAP50-95 | Mask mAP50 | Mask mAP50-95 |
-|-------|-----------|--------|-----------|--------------|------------|---------------|
-| alligator | 0.491 | 0.400 | 0.588 | 0.511 | 0.588 | 0.503 |
-| cayman | 0.630 | 0.993 | 0.802 | 0.754 | 0.802 | 0.755 |
-| crocodile | 0.690 | 0.625 | 0.665 | 0.588 | 0.665 | 0.587 |
-| **all** | **0.603** | **0.673** | **0.685** | **0.618** | **0.685** | **0.615** |
-
-**MLflow:** http://localhost:5000/#/experiments/2/runs/327d071db5294a69b4f1443ccd691f60  
-**Модель:** `yolo8_segment/yolov8n-seg-long-sgd-e50-bs8-sgd/weights/best.pt`  
-**Время обучения:** 0.148 часов (50 эпох, GTX 1650 Ti)  
-**Примечание:** SGD показал худший результат среди 50-эпохных. Медленная сходимость.
-
-**Запуск 6 (AdamW, 50 эпох, batch=8, lr=0.0005) — Результаты:**
-
-| Класс | Precision | Recall | Box mAP50 | Box mAP50-95 | Mask mAP50 | Mask mAP50-95 |
-|-------|-----------|--------|-----------|--------------|------------|---------------|
-| alligator | 0.977 | 0.700 | 0.921 | 0.834 | 0.921 | 0.834 |
-| cayman | 0.985 | 0.917 | 0.979 | 0.929 | 0.979 | 0.884 |
-| crocodile | 0.800 | 0.500 | 0.816 | 0.733 | 0.816 | 0.733 |
-| **all** | **0.920** | **0.706** | **0.905** | **0.832** | **0.905** | **0.817** |
-
-**MLflow:** http://localhost:5000/#/experiments/2/runs/cb7d9c5f8936445cb3e94a0d184c57b7  
-**Модель:** `yolo8_segment/yolov8n-seg-long-adamw-e50-bs8-adamw/weights/best.pt`  
-**Время обучения:** 0.149 часов (50 эпох, GTX 1650 Ti)  
-**Примечание:** лучший Box mAP50 среди всех запусков (0.905). Crocodile — слабое место (0.816).
-
-**Сводка всех запусков (mAP50):**
-| Запуск | Оптимизатор | Эпохи | Batch | LR | Box mAP50 | Mask mAP50 |
-|--------|-------------|-------|-------|----|-----------|------------|
-| 1 | Adam | 20 | 8 | 0.001 | 0.803 | 0.803 |
-| 2 | SGD | 20 | 8 | 0.01 | **0.877** | **0.877** |
-| 3 | AdamW | 20 | 8 | 0.001 | 0.749 | 0.749 |
-| 4 | Adam | 50 | 8 | 0.0005 | **0.900** | **0.900** |
-| 5 | SGD | 50 | 8 | 0.0005 | 0.685 | 0.685 |
-| 6 | AdamW | 50 | 8 | 0.0005 | **0.905** | **0.905** |
+| # | Модель | epochs | batch | Оптимизатор | LR | Box mAP50 |
+|---|--------|--------|-------|-------------|----|-----------|
+| 1 | yolov8n-seg | 20 | 8 | Adam | 0.001 | 0.803 |
+| 2 | yolov8n-seg | 20 | 8 | SGD | 0.01 | 0.877 |
+| 3 | yolov8n-seg | 20 | 8 | AdamW | 0.001 | 0.749 |
+| 4 | yolov8n-seg | 50 | 8 | Adam | 0.0005 | **0.900** |
+| 5 | yolov8n-seg | 50 | 8 | SGD | 0.0005 | 0.685 |
+| 6 | yolov8n-seg | 50 | 8 | AdamW | 0.0005 | **0.905** 🏆 |
 
 - [x] Запустить Run #6 (AdamW, 50ep) — mAP50=0.905
-- [x] Сравнить метрики: mAP@0.5, mAP@0.5:0.95, precision, recall
-- [ ] Выбрать лучшую модель по mAP: AdamW 50ep (0.905) vs Adam 50ep (0.900)
+- [x] Сравнить метрики: все 6 запусков в таблице
+- [x] Выбрать лучшую: **AdamW 50ep (0.905)** — установлена как основная
 
-### 2.3 Экспорт в ONNX
-- [ ] Конвертировать лучшую YOLO-модель в ONNX: `model.export(format='onnx')`
-- [ ] Проверить инференс ONNX-модели через `onnxruntime`
-- [ ] Сохранить ONNX в `data/models/yolov8_seg.onnx`
-- [ ] Загрузить ONNX в MinIO S3
-
----
-
-## Этап 3. Интеграция YOLO-модели в backend
-
-### 3.1 Backend: сервис инференса сегментации
-- [ ] Создать `core/services/segmentation_service.py`
-- [ ] Реализовать YOLO-постпроцессинг: decode boxes → NMS → decode masks
-- [ ] Возвращать: класс, confidence, bbox, маска
-
-### 3.2 Backend: API-эндпоинты
-- [ ] `POST /api/segment` — загрузить изображение, вернуть сегментацию
-- [ ] `POST /api/segment-existing` — сегментировать существующее изображение из галереи
-- [ ] Зарегистрировать в `core/api/segmentation_views.py` и `core/urls.py`
-
-### 3.3 Обновить модель данных
-- [ ] Обновить `core/settings.py` для поддержки новой модели
-- [ ] Убедиться, что `onnxruntime` установлен (уже есть)
+### 2.3 Экспорт в ONNX ✅
+- [x] Конвертировать `best.pt` → `yolov8_seg.onnx` (12.6 MB)
+- [x] Проверить инференс: выходы `output0 [1,39,8400]` + `output1 [1,32,160,160]`
+- [x] Сохранить в `data/models/yolov8_seg.onnx`
+- [x] Загрузить в MinIO S3 через `POST /api/model-upload`
 
 ---
 
-## Этап 4. Обновление frontend (React SPA)
+## Этап 3. Интеграция YOLO-модели в backend ✅
 
-### 4.1 Новая страница сегментации
-- [ ] Создать `frontend/src/widgets/Segmenter/SegmenterWidget.tsx`
-- [ ] Загрузка изображения, отображение результата с наложением маски
-- [ ] Canvas для отрисовки масок (разные цвета для классов)
-- [ ] Подписи классов: красный → Крокодил, синий → Аллигатор, зеленый → Кайман
+### 3.1 Backend: сервис инференса сегментации ✅
+- [x] `core/services/segmentation_service.py`
+- [x] YOLO-постпроцессинг: letterbox → decode boxes → NMS (IoU 0.45, conf 0.25) → маски (prototypes × coeffs → sigmoid → RLE)
+- [x] Возврат: class_name, confidence, bbox (xyxy), mask (RLE)
 
-### 4.2 Обновить роутинг
-- [ ] Добавить `/segment` маршрут в `App.tsx`
-- [ ] Добавить навигационную ссылку в меню
+### 3.2 Backend: API-эндпоинты ✅
+- [x] `POST /api/segment` — загрузить + сегментировать
+- [x] `POST /api/segment-existing` — сегментировать из галереи
+- [x] `core/api/segmentation_views.py` + `core/urls.py`
 
-### 4.3 Обновить существующие страницы
-- [ ] Классификатор: добавить кнопку "Перейти к сегментации"
-- [ ] Галерея: добавить кнопку "Сегментировать" для каждого изображения
-
----
-
-## Этап 5. Дополнительное задание: CLIP-поиск карточек (бонус)
-
-### 5.1 Создать набор карточек
-- [ ] Собрать 10+ карточек на каждый класс (30+ всего)
-- [ ] У каждой карточки: название и описание на английском
-- [ ] Сохранить карточки в `frontend/src/assets/cards/`
-
-### 5.2 Интегрировать CLIP/SigLIP на фронтенде
-- [ ] Установить `@huggingface/transformers`
-- [ ] Создать Web Worker `frontend/src/workers/search.worker.ts`
-- [ ] Загружать SigLIP модель при старте (Singleton)
-- [ ] При загрузке изображения:
-  1. Вырезать сегментированные объекты по маске
-  2. Подать в CLIP Vision Encoder
-  3. Сравнить с текстовыми эмбеддингами через cosine similarity
-  4. Отобразить top-K похожих карточек
-
-### 5.3 UI для карточек
-- [ ] Добавить секцию "Похожие карточки" под результатом сегментации
-- [ ] Отображать сетку карточек с названием и процентом сходства
+### 3.3 Настройки ✅
+- [x] ONNXRuntime установлен
+- [x] Модель загружается сначала локально, fallback на S3
 
 ---
 
-## Этап 6. Интеграционное тестирование и деплой
+## Этап 4. Обновление frontend (React SPA) ✅
 
-### 6.1 Проверка Docker
-- [ ] Собрать и запустить через `make full-up`
+### 4.1 Новая страница сегментации ✅
+- [x] `SegmenterWidget.tsx` — загрузка + masked canvas
+- [x] Canvas с полупрозрачными масками (RGB per class)
+- [x] Цвета: красный (аллигатор), зелёный (кайман), синий (крокодил)
+- [x] Вывод: class + confidence, toggle show/hide масок
 
-### 6.2 Тестирование
-- [ ] Загрузить изображение → проверить сегментацию
-- [ ] Проверить overlay масок на canvas
-- [ ] Проверить CLIP-поиск (бонус)
-- [ ] Проверить галерею и классификацию (регрессия)
+### 4.2 Роутинг ✅
+- [x] `/segment` маршрут в `App.tsx`
+- [x] Навигационная ссылка в меню
+
+### 4.3 Shared utils ✅
+- [x] `features/segmentation/segmentationSlice.ts` — Redux state
+- [x] `features/segmentation/segmentUtils.ts` — `decodeRle`, `drawMasksOnCanvas`, `CLASS_COLORS`
+
+### 4.4 Галерея ✅
+- [x] Кнопка "Сегментировать" после классификации изображения
+- [x] Canvas overlay с масками на выбранном изображении
+- [x] Список обнаруженных объектов
+- [x] Проверено: классификация + сегментация в галерее
+
+---
+
+## Этап 5. Дополнительное задание: CLIP-поиск карточек (бонус) ❌
+
+### 5.1-5.3 — Не выполнялось
+- [ ] Собрать карточки
+- [ ] Интегрировать SigLIP
+- [ ] UI для карточек
+
+---
+
+## Этап 6. Интеграционное тестирование и деплой ✅
+
+### 6.1 Проверка развёртывания ✅
+- [x] `make full-up` — все сервисы запускаются
+- [x] Backend отвечает на `/api/segment` и `/api/segment-existing`
+
+### 6.2 Тестирование функциональности ✅
+- [x] Загрузить изображение → классификация → сегментация
+- [x] Overlay масок на canvas (разные цвета)
+- [x] Галерея: просмотр → классификация → сегментация
+- [x] Навигация между страницами (регрессия)
 
 ---
 
@@ -233,66 +129,64 @@ data/dataset/obj_train_data/
 Этап 1 (CVAT разметка) ✅
     │
     ▼
-Этап 2 (обучение YOLO x1/4 ✅, осталось 3 тренировки → экспорт ONNX)
+Этап 2 (обучение YOLO 6/6 ✅ → ONNX экспорт ✅)
     │
-    ├──────────────────┐
-    ▼                   ▼
-Этап 3 (backend API)   Этап 5 (CLIP cards) ←─┐
-    │                   │                     │
-    ▼                   ▼                     │
-Этап 4 (frontend SPA) ──┼─────────────────────┘
-    │                   │
-    ▼                   ▼
-Этап 6 (тестирование в Docker)
+    ▼
+Этап 3 (backend API ✅)         Этап 5 (CLIP cards ❌)
+    │
+    ▼
+Этап 4 (frontend SPA ✅)
+    │
+    ▼
+Этап 6 (тестирование ✅)
 ```
 
 ## Технические заметки
 
 - **CVAT workaround:** Traefik несовместим с Docker 29.x → заменён на nginx-proxy в `~/cvat/docker-compose.override.yml`
-- **Формат меток:** bbox (class x_center y_center width height) — YOLOv8-seg обучается на bbox + masks
+- **Формат меток:** bbox (class x_center y_center width height) → YOLOv8-seg
 - **Конвертация:** `scripts/convert_to_yolo_seg.py` — bbox → polygon (8 точек), split 90/10 train/val
-- **Датасет:** `data/yolo8_segment/` — 268 train / 30 val изображений
-- **YOLO ONNX на backend:** Модель содержит 3 выхода (boxes, scores, masks). Потребуется постпроцессинг (NMS, decode masks) на Python с `onnxruntime`.
-- **Цвета классов:** Крокодил → `#FF4444`, Аллигатор → `#4444FF`, Кайман → `#44FF44`
-- **CLIP на фронтенде:** Работает в браузере через Web Worker (`@huggingface/transformers`), модель SigLIP base (~400MB) загружается один раз.
-- **Совместимость:** Все изменения обратно совместимы с ДЗ1 (классификация продолжает работать).
-- **Train/Val split:** `scripts/convert_to_yolo_seg.py` разбивает на train/val перед обучением
-- **Torch версия:** Обновлено torch 2.6.0 + torchvision 0.21.0 (cu124) для совместимости с ultralytics
+- **Датасет:** `data/yolo8_segment/` — 268 train / 30 val
+- **ONNX:** input `[1,3,640,640]`, outputs `output0 [1,39,8400]` + `output1 [1,32,160,160]`
+- **Постпроцессинг:** sigmoid → NMS 0.45 → masks (prototypes × coeffs → resize → RLE)
+- **Цвета классов (frontend):** красный → аллигатор, зелёный → кайман, синий → крокодил
+- **Лучшая модель:** AdamW 50ep (mAP50=0.905), крокодил стабильно слабее (0.816)
+- **Torch версия:** 2.6.0 + torchvision 0.21.0 (cu124)
 
 ---
 
-## Структура файлов
+## Структура файлов (текущая)
 
 ```
-data/dataset/                          ← ✅ аннотация CVAT (bbox)
-  obj.names                            ← классы (alligator, cayman, crocodile)
-  obj.data                             ← конфиг для darknet
-  obj_train_data/*.jpeg, *.txt        ← изображения + bbox-разметка
+data/dataset/                          ← CVAT аннотация (bbox)
+data/yolo8_segment/                   ← YOLO-датасет (polygon)
+data/models/yolov8_seg.onnx           ← ONNX экспорт лучшей модели
 
-data/yolo8_segment/                   ← ✅ подготовленный YOLO-датасет
-  dataset.yaml                         ← конфиг для YOLO
-  images/train/*.jpeg                  ← 268 изображений
-  images/val/*.jpeg                    ← 30 изображений
-  labels/train/*.txt                  ← polygon-разметка
-  labels/val/*.txt
-
-yolo8_segment/train/                   ← результаты обучения
-  weights/best.pt                      ← лучшая модель
-  weights/last.pt
-  results.png
+yolo8_segment/
+  yolov8n-seg-e20-bs8-adam/
+  yolov8n-seg-sgd-e20-bs8-sgd/
+  yolov8n-seg-adamw-e20-bs8-adamw/
+  yolov8n-seg-long-e50-bs8-adam/      ← Run #4
+  yolov8n-seg-long-sgd-e50-bs8-sgd/   ← Run #5
+  yolov8n-seg-long-adamw-e50-bs8-adamw/ ← Run #6 🏆
 
 scripts/
-  convert_to_yolo_seg.py              ← ✅ конвертация bbox → polygon
-  train_yolo_seg.py                   ← ✅ обучение с MLflow
+  convert_to_yolo_seg.py              ← конвертация bbox → polygon
+  train_yolo_seg.py                   ← обучение с MLflow
 
 backend/core/
-  services/segmentation_service.py   ← создать
-  api/segmentation_views.py           ← создать
+  services/segmentation_service.py    ← ✅ YOLO inference + postprocessing
+  api/segmentation_views.py           ← ✅ API endpoints
+  urls.py                             ← ✅ /api/segment, /api/segment-existing
 
 frontend/src/
-  widgets/Segmenter/                 ← создать
-  workers/search.worker.ts          ← создать (CLIP)
-  hooks/useFurnitureSearch.ts         ← создать (CLIP)
-  modules/card_mock.ts, math.ts      ← создать (CLIP)
-  assets/cards/                     ← создать (CLIP)
+  features/segmentation/
+    segmentationSlice.ts              ← ✅ Redux state
+    segmentUtils.ts                   ← ✅ decodeRle, drawMasksOnCanvas, CLASS_COLORS
+  widgets/Segmenter/
+    SegmenterWidget.tsx               ← ✅ страница сегментации
+    SegmenterWidget.css               ← ✅ стили
+  widgets/Gallery/
+    GalleryWidget.tsx                 ← ✅ кнопка "Сегментировать" + canvas
+    GalleryWidget.css                 ← ✅ стили для сегментации в галерее
 ```
