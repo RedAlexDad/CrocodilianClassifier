@@ -4,26 +4,25 @@
 
 ---
 
-## Этап 1. Разметка данных в CVAT
+## Этап 1. Разметка данных в CVAT ✅
 
-### 1.1 Подготовка датасета для разметки
-- [ ] Загрузить изображения (минимум 100 на класс: крокодил, аллигатор, кайман) на CVAT.ai
-- [ ] Создать 3 проекта/задания с масками сегментации (polygon/mask)
-- [ ] Разметить ключевые отличительные части: пасть, гребень, форма морды, окрас
+### 1.1 Подготовка датасета для разметки ✅
+- [x] Загрузить изображения (298 на 3 класса) в CVAT
+- [x] Создать 1 проект с 3 лейблами: alligator, caiman, crocodile
+- [x] Разметить bbox (прямоугольники)
 
-### 1.2 Экспорт разметки
-- [ ] Экспортировать аннотации в формате YOLO (segmentation) — `.txt` файлы с полигонами
-- [ ] Сохранить в `data/yolo/` следующую структуру:
-  ```
-  data/yolo/
-  ├── train/
-  │   ├── images/
-  │   ├── labels/
-  ├── val/
-  │   ├── images/
-  │   ├── labels/
-  └── data.yaml
-  ```
+### 1.2 Экспорт и подготовка датасета ✅
+- [x] Экспортировать из CVAT в формате YOLO 1.1
+- [x] Сконвертировать bbox → polygon (углы прямоугольника как полигон)
+- [x] Переложить в структуру `train/images`, `train/labels`, `val/images`, `val/labels`
+- [x] Ремэппить классы: alligator→1, caiman→1, crocodile→0
+- [x] Обновить `data.yaml`
+
+**Статус датасета:**
+```
+train: 207 images, 207 labels (croc:28, allig:63, caim:116)
+val:   91 images,  91 labels  (croc:60, allig:11, caim:20)
+```
 
 ---
 
@@ -31,17 +30,17 @@
 
 ### 2.1 Создание окружения
 - [ ] Создать `training/yolov8_segment/` — папка для YOLO-экспериментов
-- [ ] Установить `ultralytics` в отдельное окружение или добавить в зависимости
+- [ ] Установить `ultralytics` в отдельное окружение
 - [ ] Настроить MLflow-трекинг для YOLO-экспериментов
 
 ### 2.2 Запуск 4+ тренировок с разными параметрами
 
-| # | Модель | imgsz | epochs | batch | Optimizer | Комментарий |
-|---|--------|-------|--------|-------|-----------|-------------|
-| 1 | yolov8n-seg | 640 | 100 | 16 | Adam | Baseline nano |
-| 2 | yolov8s-seg | 640 | 150 | 16 | SGD | Small + SGD |
-| 3 | yolov8m-seg | 640 | 150 | 8 | Adam | Medium + Adam |
-| 4 | yolov8l-seg | 640 | 200 | 4 | Adam | Large + больше эпох |
+| # | Модель | imgsz | epochs | batch | Optimizer | LR | Статус |
+|---|--------|-------|--------|-------|-----------|----|--------|
+| 1 | yolov8n-seg | 640 | 50 | 8 | Adam | 0.001 | ⏳ |
+| 2 | yolov8s-seg | 640 | 100 | 8 | SGD | 0.01 | ⏳ |
+| 3 | yolov8n-seg | 640 | 50 | 8 | SGD | 0.01 | ⏳ |
+| 4 | yolov8s-seg | 640 | 100 | 8 | Adam | 0.001 | ⏳ |
 
 - [ ] Сравнить метрики: mAP@0.5, mAP@0.5:0.95, precision, recall
 - [ ] Выбрать лучшую модель по mAP
@@ -50,6 +49,7 @@
 - [ ] Конвертировать лучшую YOLO-модель в ONNX: `model.export(format='onnx')`
 - [ ] Проверить инференс ONNX-модели через `onnxruntime`
 - [ ] Сохранить ONNX в `data/models/yolov8_seg.onnx`
+- [ ] Загрузить ONNX в MinIO S3
 
 ---
 
@@ -58,7 +58,7 @@
 ### 3.1 Backend: сервис инференса сегментации
 - [ ] Создать `core/services/segmentation_service.py`
 - [ ] Реализовать YOLO-постпроцессинг: decode boxes → NMS → decode masks
-- [ ] Возвращать: класс, confidence, bbox, маска (RLE или polygon)
+- [ ] Возвращать: класс, confidence, bbox, маска
 
 ### 3.2 Backend: API-эндпоинты
 - [ ] `POST /api/segment` — загрузить изображение, вернуть сегментацию
@@ -66,7 +66,7 @@
 - [ ] Зарегистрировать в `core/api/segmentation_views.py` и `core/urls.py`
 
 ### 3.3 Обновить модель данных
-- [ ] Обновить `core/settings.py` для поддержки новой модели (если нужно)
+- [ ] Обновить `core/settings.py` для поддержки новой модели
 - [ ] Убедиться, что `onnxruntime` установлен (уже есть)
 
 ---
@@ -84,7 +84,7 @@
 - [ ] Добавить навигационную ссылку в меню
 
 ### 4.3 Обновить существующие страницы
-- [ ] Классификатор: добавить кнопку "Перейти к сегментации" после классификации
+- [ ] Классификатор: добавить кнопку "Перейти к сегментации"
 - [ ] Галерея: добавить кнопку "Сегментировать" для каждого изображения
 
 ---
@@ -92,33 +92,29 @@
 ## Этап 5. Дополнительное задание: CLIP-поиск карточек (бонус)
 
 ### 5.1 Создать набор карточек
-- [ ] Собрать/сгенерировать 10+ карточек на каждый класс (30+ всего)
-- [ ] У каждой карточки: название (например "Крокодил на солнце", "Аллигатор в воде") и описание на английском
+- [ ] Собрать 10+ карточек на каждый класс (30+ всего)
+- [ ] У каждой карточки: название и описание на английском
 - [ ] Сохранить карточки в `frontend/src/assets/cards/`
 
 ### 5.2 Интегрировать CLIP/SigLIP на фронтенде
 - [ ] Установить `@huggingface/transformers`
 - [ ] Создать Web Worker `frontend/src/workers/search.worker.ts`
 - [ ] Загружать SigLIP модель при старте (Singleton)
-- [ ] Посчитать эмбеддинги текстовых описаний карточек
 - [ ] При загрузке изображения:
   1. Вырезать сегментированные объекты по маске
-  2. Подать вырезанное изображение в CLIP Vision Encoder
+  2. Подать в CLIP Vision Encoder
   3. Сравнить с текстовыми эмбеддингами через cosine similarity
   4. Отобразить top-K похожих карточек
 
 ### 5.3 UI для карточек
 - [ ] Добавить секцию "Похожие карточки" под результатом сегментации
 - [ ] Отображать сетку карточек с названием и процентом сходства
-- [ ] При клике на карточку — показывать детали
 
 ---
 
 ## Этап 6. Интеграционное тестирование и деплой
 
 ### 6.1 Проверка Docker
-- [ ] Обновить `docker-compose.yml` при необходимости
-- [ ] Обновить `backend/Dockerfile` если нужны новые зависимости (ultralytics не нужен — только onnxruntime)
 - [ ] Собрать и запустить через `make full-up`
 
 ### 6.2 Тестирование
@@ -132,7 +128,7 @@
 ## Схема зависимостей
 
 ```
-Этап 1 (CVAT разметка)
+Этап 1 (CVAT разметка) ✅
     │
     ▼
 Этап 2 (обучение YOLO x4 → экспорт ONNX)
@@ -150,34 +146,34 @@
 
 ## Технические заметки
 
-- **YOLO ONNX на backend:** Модель будет содержать 3 выхода (boxes, scores, masks). Потребуется написать постпроцессинг (NMS, decode masks) на Python с `onnxruntime`.
+- **CVAT workaround:** Traefik несовместим с Docker 29.x → заменён на nginx-proxy в `~/cvat/docker-compose.override.yml`
+- **YOLO ONNX на backend:** Модель содержит 3 выхода (boxes, scores, masks). Потребуется постпроцессинг (NMS, decode masks) на Python с `onnxruntime`.
 - **Цвета классов:** Крокодил → `#FF4444`, Аллигатор → `#4444FF`, Кайман → `#44FF44`
 - **CLIP на фронтенде:** Работает в браузере через Web Worker (`@huggingface/transformers`), модель SigLIP base (~400MB) загружается один раз.
 - **Совместимость:** Все изменения обратно совместимы с ДЗ1 (классификация продолжает работать).
+- **Val split:** Ребалансировка проведена — все 3 класса представлены в val
 
 ---
 
-## Структура новых файлов
+## Структура файлов
 
 ```
+data/yolo/                           ← ✅ готов
+  train/images/, train/labels/
+  val/images/,   val/labels/
+  data.yaml
+
+training/yolov8_segment/             ← создать
+  train.py, export_onnx.py
+
 backend/core/
-  services/segmentation_service.py   ← новый
-  api/segmentation_views.py          ← новый
+  services/segmentation_service.py  ← создать
+  api/segmentation_views.py         ← создать
 
 frontend/src/
-  widgets/Segmenter/
-    SegmenterWidget.tsx              ← новый
-    SegmenterWidget.css              ← новый
-  workers/
-    search.worker.ts                 ← новый (CLIP)
-  hooks/
-    useFurnitureSearch.ts            ← новый (CLIP)
-  modules/
-    card_mock.ts                     ← новый (карточки)
-    math.ts                          ← новый (cosine similarity)
-  assets/cards/                      ← новая папка
-
-training/yolov8_segment/             ← новая папка
-  train.py                           ← скрипт тренировки
-  export_onnx.py                     ← скрипт экспорта
+  widgets/Segmenter/                 ← создать
+  workers/search.worker.ts          ← создать (CLIP)
+  hooks/useFurnitureSearch.ts         ← создать (CLIP)
+  modules/card_mock.ts, math.ts      ← создать (CLIP)
+  assets/cards/                     ← создать (CLIP)
 ```
