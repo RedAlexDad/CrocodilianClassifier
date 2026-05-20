@@ -34,20 +34,26 @@ train-resnet20: ## make train-resnet20
 train-mobilenet: ## make train-mobilenet
 	$(MAKE) train MODEL=mobilenet
 
-train-yolo-seg: ## YOLOv8-segment: yolov8n 50ep batch=4 AdamW (run #1)
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg --optimizer AdamW --lr 0.001 --epochs 50 --batch 4 --device $(DEVICE)
+train-yolo-seg: ## YOLOv8-segment: yolov8n 50ep batch=8 Adam lr=0.001 (run #1)
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg --optimizer Adam --lr 0.001 --epochs 50 --batch 8 --device $(DEVICE)
 
-train-yolo-n: ## run #1: yolov8n-seg, 50ep, batch=4, AdamW, lr=0.001
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg --optimizer AdamW --lr 0.001 --epochs 50 --batch 4 --device $(DEVICE)
+train-yolo-n: ## Run #1: yolov8n-seg 50ep Adam lr=0.001 batch=8
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg --optimizer Adam --lr 0.001 --epochs 50 --batch 8 --device $(DEVICE)
 
-train-yolo-s: ## run #2: yolov8n-seg, 50ep, batch=4, SGD, lr=0.01
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-sgd --optimizer SGD --lr 0.01 --epochs 50 --batch 4 --device $(DEVICE)
+train-yolo-s: ## Run #2: yolov8n-seg 50ep SGD lr=0.01 batch=8
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-sgd --optimizer SGD --lr 0.01 --epochs 50 --batch 8 --device $(DEVICE)
 
-train-yolo-m: ## run #3: yolov8n-seg, 50ep, batch=4, Adam, lr=0.001
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-adam --optimizer Adam --lr 0.001 --epochs 50 --batch 4 --device $(DEVICE)
+train-yolo-m: ## Run #3: yolov8n-seg 50ep AdamW lr=0.001 batch=8
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-adamw --optimizer AdamW --lr 0.001 --epochs 50 --batch 8 --device $(DEVICE)
 
-train-yolo-l: ## run #4: yolov8n-seg, 100ep, batch=4, AdamW, lr=0.0001
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-long --optimizer AdamW --lr 0.0001 --epochs 100 --batch 4 --device $(DEVICE)
+train-yolo-l: ## Run #4: yolov8n-seg 100ep Adam lr=0.001 batch=16
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-long --optimizer Adam --lr 0.001 --epochs 100 --batch 16 --device $(DEVICE)
+
+train-yolo-xl: ## Run #5: yolov8n-seg 100ep SGD lr=0.01 batch=16
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-long-sgd --optimizer SGD --lr 0.01 --epochs 100 --batch 16 --device $(DEVICE)
+
+train-yolo-xxl: ## Run #6: yolov8n-seg 100ep AdamW lr=0.001 batch=16
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-long-adamw --optimizer AdamW --lr 0.001 --epochs 100 --batch 16 --device $(DEVICE)
 
 train-compared: ## Сравнить все оптимизаторы
 	cd $(TRAINING_DIR) && $(PYTHON) main.py --model all --compare-optimizers
