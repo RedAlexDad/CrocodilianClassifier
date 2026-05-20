@@ -95,7 +95,9 @@ def train_yolo_segment(
     )
 
     run_name = f"{model_name}-e{epochs}-bs{batch}-{optimizer.lower()}"
-    with mlflow.start_run(run_name=run_name):
+    project_dir = ROOT_DIR / "yolo8_segment" / run_name
+
+    with mlflow.start_run(run_name=run_name, experiment_name="yolo8-segment"):
         mlflow.log_params({
             "model": model_name,
             "optimizer": optimizer,
@@ -121,8 +123,8 @@ def train_yolo_segment(
             lr0=lr,
             lrf=0.01,
             project=str(ROOT_DIR / "yolo8_segment"),
-            name="train",
-            exist_ok=True,
+            name=run_name,
+            exist_ok=False,
             verbose=True,
             amp=True,
             plots=True,
@@ -130,9 +132,9 @@ def train_yolo_segment(
             save_period=10,
         )
 
-        best_model_path = ROOT_DIR / "yolo8_segment" / "train" / "weights" / "best.pt"
-        last_model_path = ROOT_DIR / "yolo8_segment" / "train" / "weights" / "last.pt"
-        export_dir = ROOT_DIR / "yolo8_segment" / "train" / "weights"
+        best_model_path = project_dir / "weights" / "best.pt"
+        last_model_path = project_dir / "weights" / "last.pt"
+        export_dir = project_dir / "weights"
 
         safe_name = model_name.replace("-", "_").replace(".", "_")
 
@@ -147,13 +149,14 @@ def train_yolo_segment(
         if last_model_path.exists():
             mlflow.log_artifact(str(last_model_path), "model_last")
 
-        shutil.copy(export_dir / "best.pt", ROOT_DIR / "data" / "models" / f"{safe_name}_best.pt")
+        if (export_dir / "best.pt").exists():
+            shutil.copy(export_dir / "best.pt", ROOT_DIR / "data" / "models" / f"{safe_name}_best.pt")
 
-        results_plot = ROOT_DIR / "yolo8_segment" / "train" / "results.png"
+        results_plot = project_dir / "results.png"
         if results_plot.exists():
             mlflow.log_artifact(str(results_plot), "artifacts")
 
-        confusion_matrix = ROOT_DIR / "yolo8_segment" / "train" / "confusion_matrix.png"
+        confusion_matrix = project_dir / "confusion_matrix.png"
         if confusion_matrix.exists():
             mlflow.log_artifact(str(confusion_matrix), "artifacts")
 
@@ -163,7 +166,6 @@ def train_yolo_segment(
                 if isinstance(value, (int, float)):
                     clean_key = key.replace("[", "_").replace("]", "_").replace("(", "_").replace(")", "_").replace("/", "_")
                     mlflow.log_metric(clean_key, value)
-                    metrics[clean_key] = value
                     metrics[clean_key] = value
 
         print(f"\n  Training complete!")
