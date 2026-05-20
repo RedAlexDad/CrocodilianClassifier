@@ -100,12 +100,25 @@ data/dataset/obj_train_data/
 
 ---
 
-## Этап 5. Дополнительное задание: CLIP-поиск карточек (бонус) ❌
+## Этап 5. Дополнительное задание: CLIP-поиск карточек (бонус) ✅
 
-### 5.1-5.3 — Не выполнялось
-- [ ] Собрать карточки
-- [ ] Интегрировать SigLIP
-- [ ] UI для карточек
+### 5.1 Набор карточек ✅
+- [x] 36 карточек (12 на класс) с названиями и описаниями на русском
+- [x] `frontend/src/features/cards/cardsData.ts` — Card[] с id, classId, title, description
+
+### 5.2 Backend: CLIP сервис ✅
+- [x] `openai/clip-vit-base-patch32` через `transformers` (Python, на backend)
+- [x] `core/services/clip_service.py` — кэширование модели + текстовых эмбеддингов
+- [x] `encode_image()` → 512d вектор, `encode_texts()` → матрица N×512
+- [x] Cosine similarity между image embedding и всеми text embeddings → top-K
+- [x] `POST /api/card-search` — принимает обрезанный объект (base64), возвращает карточки
+
+### 5.3 Frontend: crop + поиск ✅
+- [x] `features/segmentation/cropUtils.ts` — `cropDetection()` вырезает объект по маске (RLE decode → alpha channel)
+- [x] `hooks/useCardSearch.ts` — хук для вызова `/api/card-search`
+- [x] Кнопка "Найти карточки" в результатах сегментации (SegmenterWidget + GalleryWidget)
+- [x] Секция "Похожие карточки" с сеткой карточек (номер, название, описание, % сходства)
+- [x] Проверено: сегментация → обрезка по маске → CLIP → 5 похожих карточек
 
 ---
 
@@ -113,12 +126,13 @@ data/dataset/obj_train_data/
 
 ### 6.1 Проверка развёртывания ✅
 - [x] `make full-up` — все сервисы запускаются
-- [x] Backend отвечает на `/api/segment` и `/api/segment-existing`
+- [x] Backend отвечает на `/api/segment`, `/api/segment-existing`, `/api/card-search`
 
 ### 6.2 Тестирование функциональности ✅
 - [x] Загрузить изображение → классификация → сегментация
 - [x] Overlay масок на canvas (разные цвета)
 - [x] Галерея: просмотр → классификация → сегментация
+- [x] CLIP-поиск: сегментация → обрезка → API → карточки
 - [x] Навигация между страницами (регрессия)
 
 ---
@@ -131,11 +145,12 @@ data/dataset/obj_train_data/
     ▼
 Этап 2 (обучение YOLO 6/6 ✅ → ONNX экспорт ✅)
     │
-    ▼
-Этап 3 (backend API ✅)         Этап 5 (CLIP cards ❌)
-    │
-    ▼
-Этап 4 (frontend SPA ✅)
+    ├──────────────────────┐
+    ▼                       ▼
+Этап 3 (backend API ✅)   Этап 5 (CLIP cards ✅)
+    │                       │
+    ▼                       ▼
+Этап 4 (frontend SPA ✅) ──┘
     │
     ▼
 Этап 6 (тестирование ✅)
@@ -152,6 +167,9 @@ data/dataset/obj_train_data/
 - **Цвета классов (frontend):** красный → аллигатор, зелёный → кайман, синий → крокодил
 - **Лучшая модель:** AdamW 50ep (mAP50=0.905), крокодил стабильно слабее (0.816)
 - **Torch версия:** 2.6.0 + torchvision 0.21.0 (cu124)
+- **CLIP модель:** `openai/clip-vit-base-patch32` (512d эмбеддинги), работает на backend через `transformers`
+- **CLIP поиск:** изображение обрезается по маске (RLE → alpha channel) → base64 → POST /api/card-search → cosine similarity с текстовыми эмбеддингами 36 карточек → top-5
+- **Карточки:** 36 шт (12 на класс), статический файл `frontend/src/features/cards/cardsData.ts`
 
 ---
 
@@ -161,6 +179,8 @@ data/dataset/obj_train_data/
 data/dataset/                          ← CVAT аннотация (bbox)
 data/yolo8_segment/                   ← YOLO-датасет (polygon)
 data/models/yolov8_seg.onnx           ← ONNX экспорт лучшей модели
+
+TRAINING_RESULTS.md                   ← Анализ результатов обучения
 
 yolo8_segment/
   yolov8n-seg-e20-bs8-adam/
@@ -175,18 +195,25 @@ scripts/
   train_yolo_seg.py                   ← обучение с MLflow
 
 backend/core/
-  services/segmentation_service.py    ← ✅ YOLO inference + postprocessing
-  api/segmentation_views.py           ← ✅ API endpoints
-  urls.py                             ← ✅ /api/segment, /api/segment-existing
+  services/segmentation_service.py    ← YOLO inference + postprocessing
+  services/clip_service.py            ← CLIP модель + токенизация + encode
+  api/segmentation_views.py           ← /api/segment, /api/segment-existing
+  api/card_views.py                   ← /api/card-search
+  urls.py                             ← все маршруты
 
 frontend/src/
+  features/cards/
+    cardsData.ts                      ← 36 карточек (12 на класс)
   features/segmentation/
-    segmentationSlice.ts              ← ✅ Redux state
-    segmentUtils.ts                   ← ✅ decodeRle, drawMasksOnCanvas, CLASS_COLORS
+    segmentationSlice.ts              ← Redux state
+    segmentUtils.ts                   ← decodeRle, drawMasksOnCanvas, CLASS_COLORS
+    cropUtils.ts                      ← cropDetection по маске, canvasToDataUrl
+  hooks/
+    useCardSearch.ts                  ← хук для поиска карточек
   widgets/Segmenter/
-    SegmenterWidget.tsx               ← ✅ страница сегментации
-    SegmenterWidget.css               ← ✅ стили
+    SegmenterWidget.tsx               ← страница сегментации + карточки
+    SegmenterWidget.css               ← стили для карточек
   widgets/Gallery/
-    GalleryWidget.tsx                 ← ✅ кнопка "Сегментировать" + canvas
-    GalleryWidget.css                 ← ✅ стили для сегментации в галерее
+    GalleryWidget.tsx                 ← сегментация + карточки в галерее
+    GalleryWidget.css                 ← стили
 ```

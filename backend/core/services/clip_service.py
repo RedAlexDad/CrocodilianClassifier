@@ -10,8 +10,48 @@ _processor = None
 _text_embeddings = None
 _card_texts = None
 _card_ids = None
+_card_titles = None
 
 MODEL_NAME = "openai/clip-vit-base-patch32"
+
+_RUSSIAN_TITLES = {
+    1: "Миссисипский аллигатор",
+    2: "Китайский аллигатор",
+    3: "Аллигатор в мангровых зарослях",
+    4: "Аллигатор на песчаном берегу",
+    5: "Молодой аллигатор",
+    6: "Аллигатор в илистой воде",
+    7: "Аллигатор в сумерках",
+    8: "Аллигатор с распахнутой пастью",
+    9: "Аллигатор в зимней спячке",
+    10: "Аллигатор в зоопарке",
+    11: "Аллигатор с детёнышами",
+    12: "Аллигатор под водой",
+    13: "Кайман крокодиловый",
+    14: "Чёрный кайман",
+    15: "Кайман Якаре",
+    16: "Карликовый кайман Кювье",
+    17: "Кайман в сезон дождей",
+    18: "Кайман с широкой мордой",
+    19: "Молодой кайман",
+    20: "Кайман в ночное время",
+    21: "Кайман на охоте",
+    22: "Кайман на бревне",
+    23: "Кайман в мутной воде",
+    24: "Кайман с открытым ртом",
+    25: "Нильский крокодил",
+    26: "Гребнистый крокодил",
+    27: "Болотный крокодил",
+    28: "Кубинский крокодил",
+    29: "Крокодил в реке",
+    30: "Молодой крокодил",
+    31: "Крокодил на солнце",
+    32: "Крокодил с раскрытой пастью",
+    33: "Крокодил под водой с рыбой",
+    34: "Острорылый крокодил",
+    35: "Крокодил в сухой сезон",
+    36: "Крокодил-альбинос",
+}
 
 def get_clip_model():
     global _model, _processor
@@ -23,47 +63,47 @@ def get_clip_model():
 
 
 def get_card_texts():
-    global _card_texts, _card_ids, _text_embeddings
+    global _card_texts, _card_ids, _card_titles, _text_embeddings
     if _card_texts is not None:
         return _card_texts, _card_ids, _text_embeddings
 
     _card_texts = [
-        "Миссисипский аллигатор, крупный аллигатор в болотах Флориды, тёмно-зелёный с широкой мордой",
-        "Китайский аллигатор, небольшой аллигатор в пресных водоёмах Янцзы, тёмно-серый с костяными наростами",
-        "Аллигатор в мангровых зарослях, аллигатор среди корней мангровых деревьев",
-        "Аллигатор на песчаном берегу, аллигатор греющийся на солнце у кромки воды",
-        "Молодой аллигатор, детёныш аллигатора с жёлтыми полосами на тёмно-зелёном теле",
-        "Аллигатор в илистой воде, аллигатор выглядывающий из мутной болотной воды",
-        "Аллигатор в сумерках, аллигатор в вечерних сумерках с горящими глазами",
-        "Аллигатор с распахнутой пастью, аллигатор демонстрирует зубы на солнце",
-        "Аллигатор в зимней спячке, аллигатор в грязи в состоянии оцепенения",
-        "Аллигатор в зоопарке, аллигатор в искусственном водоёме зоопарка",
-        "Аллигатор с детёнышами, взрослый аллигатор охраняет выводок у гнезда",
-        "Аллигатор под водой, аллигатор под гладью воды, тёмный силуэт",
-        "Очковый кайман, кайман с характерной перемычкой между глаз, болота Амазонки",
-        "Чёрный кайман, крупный тёмный кайман из бассейна Ориноко",
-        "Кайман Якаре, пятнистый кайман на песчаном берегу реки",
-        "Карликовый кайман Кювье, маленький кайман в лесном ручье",
-        "Кайман в сезон дождей, кайман в затопленном лесу, видна голова над водой",
-        "Кайман с широкой мордой, кайман с приплюснутой мордой на камне у воды",
-        "Молодой кайман, детёныш каймана с яркими жёлто-чёрными полосами",
-        "Кайман в ночное время, кайман с горящими красными глазами в темноте",
-        "Кайман на охоте, кайман подкрадывающийся к рыбе у дна",
-        "Кайман на бревне, кайман греющийся на поваленном дереве у реки",
-        "Кайман в мутной воде, кайман частично скрытый взбаламученной водой",
-        "Кайман с открытым ртом, кайман терморегулирует с открытой пастью",
-        "Нильский крокодил, крупный крокодил на берегу с V-образной мордой",
-        "Гребнистый крокодил, самый большой крокодил в солёной воде Австралии",
-        "Болотный крокодил, крокодил из индийских болот с широкой мордой",
-        "Кубинский крокодил, редкий крокодил с яркими жёлтыми пятнами на спине",
-        "Крокодил в реке, крокодил частично погружённый в мутную реку",
-        "Молодой крокодил, детёныш крокодила с контрастными полосами на теле",
-        "Крокодил на солнце, крокодил неподвижно лежащий на нагретом камне",
-        "Крокодил с раскрытой пастью, крокодил демонстрирует мощные челюсти",
-        "Крокодил с рыбой, крокодил под водой с добычей в зубах",
-        "Острорылый крокодил, африканский узкорылый крокодил с длинной мордой",
-        "Крокодил в сухой сезон, крокодил в пересохшем русле реки зарылся в ил",
-        "Крокодил-альбинос, редкий белый крокодил с розоватыми глазами",
+        "Broad-snouted alligator lurking in murky Florida swamp, dark green scaly body with wide rounded snout",
+        "Small endangered alligator in Yangtze river, dark gray armored body with bony ridges on back",
+        "Alligator half-submerged among tangled mangrove tree roots, muddy water hiding its body",
+        "Alligator resting on warm sand at riverbank, mouth wide open showing teeth, sun reflecting on scales",
+        "Juvenile alligator with bright yellow crossbands on dark green body, small and alert near water edge",
+        "Alligator submerged in muddy swamp with only eyes and nostrils breaking the surface like periscopes",
+        "Alligator in twilight with eyeshine reflecting red, dark silhouette against fading evening light",
+        "Alligator basking with enormous open jaw showing rows of sharp teeth and pink tongue",
+        "Alligator in brumation half-buried in mud, only armored back plates visible above frozen surface",
+        "Captive alligator in concrete enclosure pond, educational sign visible, close-up of head",
+        "Mother alligator guarding newborn hatchlings near vegetation nest, tiny babies with yellow bands",
+        "Alligator swimming just below water surface, dark elongated silhouette seen from above",
+        "Spectacled caiman with bony bridge between eyes in Amazon basin, medium-sized predator in shallow water",
+        "Giant dark melanistic caiman from Orinoco river, near-black coloration, largest caiman species",
+        "Spotted caiman sunbathing on sandy Paraguay riverbank, yellow-brown pattern on dark background",
+        "Tiny dwarf caiman in rainforest stream, brown with black spots, less than one meter long",
+        "Caiman swimming in flooded Amazon forest, head poking above murky brown water between trees",
+        "Caiman with unusually wide flattened snout resting on sun-warmed rock near river",
+        "Baby caiman with vivid yellow and black striped tail hiding among floating vegetation",
+        "Caiman at night with crimson eye reflection, dark body barely visible in black water",
+        "Caiman stalking fish in shallow stream, belly scraping river bottom, stealthy approach",
+        "Caiman basking on fallen log drifting in river, tail hanging into the water",
+        "Caiman lurking in muddy water with only eyes showing, ambush predator waiting for prey",
+        "Caiman overheating with mouth agape, thin tongue visible, cooling down on hot day",
+        "Large Nile crocodile with pointed V-shaped snout on African riverbank, massive tail and armored back",
+        "Saltwater crocodile in Australian estuary, enormous with prominent snout ridges, largest living reptile",
+        "Mugger crocodile in Indian marshland, dark olive with broad snout, basking on muddy bank",
+        "Cuban crocodile with bright yellow blotches on dark body, distinctive spiky armor, highly aggressive",
+        "Crocodile floating in murky river with only long snout and eyes above surface, ambush mode",
+        "Baby crocodile with bold black and white stripes on body and tail, hiding in reeds",
+        "Crocodile motionless on hot rock, mouth slightly open, scales reflecting bright sunlight",
+        "Crocodile gaping with massive jaws showing uneven teeth, powerful bite force visible",
+        "Crocodile underwater holding captured fish in jaws, bubbles rising, side profile of snout",
+        "Slender-snouted African crocodile with very long thin snout specialized for catching fish",
+        "Crocodile buried in dried cracked mud of evaporated riverbed, estivation survival mode",
+        "Rare albino crocodile in captivity with pure white skin and pink eyes, partial albinism",
     ]
     _card_ids = list(range(1, 37))
     return _card_texts, _card_ids, None
@@ -113,12 +153,12 @@ def search_similar_cards(image: Image.Image, top_k: int = 5):
 
     results = []
     for score, idx in zip(scores.tolist(), indices.tolist()):
+        card_id = card_ids[idx]
         results.append({
-            "card_id": card_ids[idx],
-            "title": texts[idx].split(",")[0],
+            "card_id": card_id,
+            "title": _RUSSIAN_TITLES.get(card_id, ""),
             "description": texts[idx],
             "similarity": round(score, 4),
         })
 
-    results.sort(key=lambda r: r["card_id"])
     return results
