@@ -136,8 +136,7 @@ def train_yolo_segment(
         if best_model_path.exists():
             mlflow.log_artifact(str(best_model_path), "model")
 
-            model.export(format="onnx", imgsz=imgsz, simplify=True)
-            onnx_file = export_dir / f"{safe_name}_best.onnx"
+            onnx_file = export_dir / "best.onnx"
             if onnx_file.exists():
                 mlflow.log_artifact(str(onnx_file), "onnx_model")
                 shutil.copy(onnx_file, ROOT_DIR / "data" / "models" / f"{safe_name}_best.onnx")
@@ -159,8 +158,9 @@ def train_yolo_segment(
         if hasattr(results, "results_dict"):
             for key, value in results.results_dict.items():
                 if isinstance(value, (int, float)):
-                    clean_key = key.replace("[", "_").replace("]", "_").replace("/", "_")
+                    clean_key = key.replace("[", "_").replace("]", "_").replace("(", "_").replace(")", "_").replace("/", "_")
                     mlflow.log_metric(clean_key, value)
+                    metrics[clean_key] = value
                     metrics[clean_key] = value
 
         print(f"\n  Training complete!")
