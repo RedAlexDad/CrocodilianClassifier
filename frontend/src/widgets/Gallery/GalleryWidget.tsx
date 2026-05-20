@@ -180,7 +180,7 @@ export function GalleryWidget() {
     try {
       const cropCanvas = cropDetection(img, detection);
       const dataUrl = canvasToDataUrl(cropCanvas);
-      await searchCards(dataUrl);
+      await searchCards(dataUrl, detection.class_id);
       setSearchedDetIdx(idx);
     } finally {
       setSearchingIdx(null);

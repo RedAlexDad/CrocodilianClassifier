@@ -143,13 +143,25 @@ def encode_image(image: Image.Image):
     return embedding
 
 
-def search_similar_cards(image: Image.Image, top_k: int = 5):
+def search_similar_cards(image: Image.Image, top_k: int = 5, class_id: int | None = None):
     img_emb = encode_image(image)
     txt_embs = get_text_embeddings()
     texts, card_ids, _ = get_card_texts()
 
     similarity = (img_emb @ txt_embs.T).squeeze(0)
-    scores, indices = torch.topk(similarity, k=min(top_k, len(texts)))
+
+    if class_id is not None:
+        per_class = 12
+        mask = torch.tensor([
+            (cid - 1) // per_class == class_id for cid in card_ids
+        ], dtype=torch.bool)
+        filtered_scores = similarity[mask]
+        filtered_indices = torch.where(mask)[0]
+        actual_k = min(top_k, filtered_scores.size(0))
+        scores, top_local = torch.topk(filtered_scores, k=actual_k)
+        indices = filtered_indices[top_local]
+    else:
+        scores, indices = torch.topk(similarity, k=min(top_k, len(texts)))
 
     results = []
     for score, idx in zip(scores.tolist(), indices.tolist()):

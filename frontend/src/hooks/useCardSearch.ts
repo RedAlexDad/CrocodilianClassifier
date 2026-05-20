@@ -20,14 +20,16 @@ export function useCardSearch() {
     error: null,
   });
 
-  const searchCards = useCallback(async (imageDataUrl: string) => {
+  const searchCards = useCallback(async (imageDataUrl: string, classId?: number) => {
     setState({ results: [], isLoading: true, error: null });
 
     try {
+      const body: Record<string, unknown> = { image_data: imageDataUrl, top_k: 5 };
+      if (classId !== undefined) body.class_id = classId;
       const response = await fetch("/api/card-search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image_data: imageDataUrl, top_k: 5 }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
