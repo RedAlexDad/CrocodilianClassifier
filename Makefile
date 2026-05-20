@@ -62,9 +62,11 @@ help: ## Показать справку
 	@echo "  $(MAKE) train-cnn                    Обучить CNN"
 	@echo "  $(MAKE) train-mlp                    Обучить MLP"
 	@echo "  $(MAKE) train-resnet20               Обучить ResNet20"
-	@echo "  $(MAKE) train-yolo-seg              Обучить YOLOv8-segment"
-	@echo "  $(MAKE) train-yolo-n                Обучить YOLOv8n-seg 50ep"
-	@echo "  $(MAKE) train-yolo-s                Обучить YOLOv8s-seg 100ep"
+@echo "  $(MAKE) train-yolo-seg              Обучить YOLOv8-segment (n, 50ep)"
+	@echo "  $(MAKE) train-yolo-n                yolov8n-seg 50ep AdamW batch=4"
+	@echo "  $(MAKE) train-yolo-s                yolov8s-seg 100ep SGD batch=8 lr=0.01"
+	@echo "  $(MAKE) train-yolo-m                yolov8m-seg 100ep Adam batch=8 lr=0.001"
+	@echo "  $(MAKE) train-yolo-l                yolov8l-seg 100ep SGD batch=4 lr=0.01"
 	@echo "  $(MAKE) train-all                    Обучить все модели"
 	@echo "  $(MAKE) train MODEL=cnn OPTIMIZER=sgd EPOCHS=100 LR=0.01"
 	@echo ""
@@ -78,7 +80,7 @@ help: ## Показать справку
 	@echo "  $(MAKE) backend-restart              Перезапустить Django (быстро)"
 	@echo "  $(MAKE) frontend-restart             Перезапустить React (быстро)"
 	@echo "  $(MAKE) web-restart                  Перезапустить backend + frontend (быстро)"
-	@echo "  $(MAKE) logs service=backend          Логи сервиса"
+	@echo "  $(MAKE) logs service=backend         Логи сервиса"
 	@echo "  $(MAKE) clean                        Очистить контейнеры"
 	@echo ""
 	@echo "$(GREEN)MLflow:$(NC)"
@@ -147,14 +149,20 @@ train-resnet20: ## make train-resnet20
 train-mobilenet: ## make train-mobilenet
 	$(MAKE) train MODEL=mobilenet
 
-train-yolo-seg: ## Обучить YOLOv8-segment с дефолтными параметрами (yolov8n, 50ep, batch=4)
-	cd $(TRAINING_DIR) && $(PYTHON) train_yolo_seg.py --model yolov8n-seg --optimizer AdamW --lr 0.001 --epochs 50 --batch 4 --device $(DEVICE)
+train-yolo-seg: ## Обучить YOLOv8-segment: python main.py --task segment
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg --optimizer AdamW --lr 0.001 --epochs 50 --batch 4 --device $(DEVICE)
 
-train-yolo-n: ## Обучить yolov8n-seg: 50ep, batch=4, AdamW
-	cd $(TRAINING_DIR) && $(PYTHON) train_yolo_seg.py --model yolov8n-seg --optimizer AdamW --lr 0.001 --epochs 50 --batch 4 --device $(DEVICE)
+train-yolo-n: ## yolov8n-seg: 50ep, batch=4, AdamW
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg --optimizer AdamW --lr 0.001 --epochs 50 --batch 4 --device $(DEVICE)
 
-train-yolo-s: ## Обучить yolov8s-seg: 100ep, batch=8, SGD, lr=0.01
-	cd $(TRAINING_DIR) && $(PYTHON) train_yolo_seg.py --model yolov8s-seg --optimizer SGD --lr 0.01 --epochs 100 --batch 8 --device $(DEVICE)
+train-yolo-s: ## yolov8s-seg: 100ep, batch=8, SGD, lr=0.01
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8s-seg --optimizer SGD --lr 0.01 --epochs 100 --batch 8 --device $(DEVICE)
+
+train-yolo-m: ## yolov8m-seg: 100ep, batch=8, Adam, lr=0.001
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8m-seg --optimizer Adam --lr 0.001 --epochs 100 --batch 8 --device $(DEVICE)
+
+train-yolo-l: ## yolov8l-seg: 100ep, batch=4, SGD, lr=0.01
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8l-seg --optimizer SGD --lr 0.01 --epochs 100 --batch 4 --device $(DEVICE)
 
 train-compared: ## Сравнить все оптимизаторы
 	cd $(TRAINING_DIR) && $(PYTHON) main.py --model all --compare-optimizers

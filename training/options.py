@@ -6,11 +6,27 @@ from typing import Any, Callable, Dict, List, Optional
 
 from scripts.train_model import train_model
 
+
 OPTIMIZERS = ["adam", "adagrad", "rmsprop", "sgd"]
 OPTIMIZERS_MLP = ["adam", "adagrad", "rmsprop"]
 OPTIMIZERS_CNN = ["sgd", "adam", "rmsprop"]
-OPTIMIZERS_TL = ["adam", "adagrad", "rmsprop"]  # Transfer learning: ResNet20, MobileNet
+OPTIMIZERS_TL = ["adam", "adagrad", "rmsprop"]
 
+MODEL_ALIASES = {
+    "yolov8n-seg": "yolov8n-seg.pt",
+    "yolov8s-seg": "yolov8s-seg.pt",
+    "yolov8m-seg": "yolov8m-seg.pt",
+    "yolov8l-seg": "yolov8l-seg.pt",
+}
+
+YOLO_MODELS = list(MODEL_ALIASES.keys())
+
+SEGMENT_CONFIGS = {
+    "yolov8n-seg": {"default_optimizer": "AdamW", "default_epochs": 50,  "default_batch": 4,  "default_lr": 0.001},
+    "yolov8s-seg": {"default_optimizer": "SGD",   "default_epochs": 100,  "default_batch": 8,  "default_lr": 0.01},
+    "yolov8m-seg": {"default_optimizer": "Adam",  "default_epochs": 100,  "default_batch": 8,  "default_lr": 0.001},
+    "yolov8l-seg": {"default_optimizer": "SGD",   "default_epochs": 100,  "default_batch": 4,  "default_lr": 0.01},
+}
 
 MODEL_CONFIGS = {
     "mlp": {
