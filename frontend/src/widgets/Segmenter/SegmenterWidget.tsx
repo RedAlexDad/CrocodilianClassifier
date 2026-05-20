@@ -2,7 +2,10 @@ import type { AppDispatch, RootState } from "@/app/store/store";
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { CLASS_COLORS, decodeRle, drawMasksOnCanvas } from "@/features/segmentation/segmentUtils";
+import { CLASS_COLORS, drawMasksOnCanvas } from "@/features/segmentation/segmentUtils";
+import { cropDetection, canvasToDataUrl } from "@/features/segmentation/cropUtils";
+import { useCardSearch } from "@/hooks/useCardSearch";
+import type { Detection } from "@/features/segmentation/segmentUtils";
 import "./SegmenterWidget.css";
 
 export function SegmenterWidget() {
@@ -15,6 +18,9 @@ export function SegmenterWidget() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+  const [searchingIdx, setSearchingIdx] = useState<number | null>(null);
+  const { results: cardResults, isLoading: cardsLoading, searchCards } = useCardSearch();
+  const [searchedDetIdx, setSearchedDetIdx] = useState<number | null>(null);
 
   const drawDetections = useCallback(() => {
     const canvas = canvasRef.current;
@@ -100,6 +106,23 @@ export function SegmenterWidget() {
     }
   }, [dispatch]);
 
+  const handleFindCards = useCallback(async (detection: Detection, idx: number) => {
+    const img = imageRef.current;
+    if (!img) return;
+    setSearchingIdx(idx);
+    setSearchedDetIdx(null);
+    try {
+      const cropCanvas = cropDetection(img, detection);
+      const dataUrl = canvasToDataUrl(cropCanvas);
+      await searchCards(dataUrl);
+      setSearchedDetIdx(idx);
+    } finally {
+      setSearchingIdx(null);
+    }
+  }, [searchCards]);
+
+  const CLASS_NAMES_RU = ["Аллигатор", "Кайман", "Крокодил"];
+
   return (
     <div className="segmenter-widget">
       <div className="content">
@@ -184,29 +207,62 @@ export function SegmenterWidget() {
           <div className="results-list">
             <h3>Обнаруженные объекты:</h3>
             {detections.map((det, idx) => {
-              const color = CLASS_COLORS[det.class_id] || {
-                r: 128,
-                g: 128,
-                b: 128,
-              };
+              const color = CLASS_COLORS[det.class_id] || { r: 128, g: 128, b: 128 };
               return (
                 <div key={idx} className="result-item">
                   <span
                     className="color-badge"
-                    style={{
-                      backgroundColor: `rgb(${color.r},${color.g},${color.b})`,
-                    }}
+                    style={{ backgroundColor: `rgb(${color.r},${color.g},${color.b})` }}
                   />
                   <span className="class-name">{det.class_name}</span>
                   <span className="confidence">
                     {(det.confidence * 100).toFixed(1)}%
                   </span>
-                  <span className="bbox-info">
-                    bbox: [{det.bbox.join(", ")}]
-                  </span>
+                  <button
+                    className="btn btn-small btn-card-search"
+                    onClick={() => handleFindCards(det, idx)}
+                    disabled={searchingIdx === idx}
+                  >
+                    {searchingIdx === idx ? "Поиск..." : "Найти карточки"}
+                  </button>
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {cardsLoading && (
+          <div className="loading">
+            <Loader2 className="spin" />
+            <p>Поиск похожих карточек через CLIP...</p>
+          </div>
+        )}
+
+        {cardResults.length > 0 && searchedDetIdx !== null && detections[searchedDetIdx] && (
+          <div className="cards-section">
+            <h3>
+              Похожие карточки для: {CLASS_NAMES_RU[detections[searchedDetIdx].class_id]}
+            </h3>
+            <div className="cards-grid">
+              {cardResults.map((card) => {
+                const cardClassId = Math.floor((card.card_id - 1) / 12);
+                const color = CLASS_COLORS[cardClassId] || { r: 128, g: 128, b: 128 };
+                return (
+                  <div key={card.card_id} className="card-item">
+                    <div className="card-header">
+                      <div className="card-number" style={{ backgroundColor: `rgb(${color.r},${color.g},${color.b})` }}>
+                        {card.card_id}
+                      </div>
+                      <span className="card-similarity">
+                        {(card.similarity * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="card-title">{card.title}</div>
+                    <div className="card-desc">{card.description}</div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

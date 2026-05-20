@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import path
 
-from .api import mlflow_views, model_views, image_views, segmentation_views
+from .api import mlflow_views, model_views, image_views, segmentation_views, card_views
 from . import views
 
 urlpatterns = [
@@ -25,6 +25,7 @@ urlpatterns = [
     path("api/predict-existing", image_views.predict_existing_image_api, name="predict_existing_api"),
     path("api/segment", segmentation_views.segment_image_api, name="segment_api"),
     path("api/segment-existing", segmentation_views.segment_existing_image_api, name="segment_existing_api"),
+    path("api/card-search", card_views.card_search_api, name="card_search_api"),
 ]
 
 # Отдавать медиа файлы через S3 не нужно - они уже доступны по прямому URL

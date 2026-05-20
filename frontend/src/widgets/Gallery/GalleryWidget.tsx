@@ -1,6 +1,9 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { CLASS_COLORS, drawMasksOnCanvas, type Detection } from '@/features/segmentation/segmentUtils';
+import { cropDetection, canvasToDataUrl } from '@/features/segmentation/cropUtils';
+import { useCardSearch } from '@/hooks/useCardSearch';
+import type { CardMatch } from '@/hooks/useCardSearch';
 import './GalleryWidget.css';
 
 interface ImageItem {
@@ -16,6 +19,39 @@ interface PredictionResult {
   current_model: string;
 }
 
+const CLASS_NAMES_RU = ['Аллигатор', 'Кайман', 'Крокодил'];
+
+function CardsSection({ results, detClassId }: { results: CardMatch[]; detClassId: number }) {
+  return (
+    <div className="cards-section">
+      <h3>Похожие карточки для: {CLASS_NAMES_RU[detClassId]}</h3>
+      <div className="cards-grid">
+        {results.map((card) => {
+          const cardClassId = Math.floor((card.card_id - 1) / 12);
+          const color = CLASS_COLORS[cardClassId] || { r: 128, g: 128, b: 128 };
+          return (
+            <div key={card.card_id} className="card-item">
+              <div className="card-header">
+                <div
+                  className="card-number"
+                  style={{ backgroundColor: `rgb(${color.r},${color.g},${color.b})` }}
+                >
+                  {card.card_id}
+                </div>
+                <span className="card-similarity">
+                  {(card.similarity * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div className="card-title">{card.title}</div>
+              <div className="card-desc">{card.description}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function GalleryWidget() {
   const [images, setImages] = useState<ImageItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -29,6 +65,9 @@ export function GalleryWidget() {
   const [isSegmenting, setIsSegmenting] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const segImageRef = useRef<HTMLImageElement>(null);
+  const [searchingIdx, setSearchingIdx] = useState<number | null>(null);
+  const { results: cardResults, isLoading: cardsLoading, searchCards } = useCardSearch();
+  const [searchedDetIdx, setSearchedDetIdx] = useState<number | null>(null);
 
   const loadImages = useCallback(async () => {
     setIsLoading(true);
@@ -132,6 +171,21 @@ export function GalleryWidget() {
     if (!canvas || !img || segDetections.length === 0) return;
     drawMasksOnCanvas(canvas, img, segDetections);
   }, [segDetections]);
+
+  const handleFindCards = useCallback(async (detection: Detection, idx: number) => {
+    const img = segImageRef.current;
+    if (!img) return;
+    setSearchingIdx(idx);
+    setSearchedDetIdx(null);
+    try {
+      const cropCanvas = cropDetection(img, detection);
+      const dataUrl = canvasToDataUrl(cropCanvas);
+      await searchCards(dataUrl);
+      setSearchedDetIdx(idx);
+    } finally {
+      setSearchingIdx(null);
+    }
+  }, [searchCards]);
 
   return (
     <div className="gallery-widget">
@@ -248,11 +302,32 @@ export function GalleryWidget() {
                     <span className="color-badge" style={{ backgroundColor: `rgb(${color.r},${color.g},${color.b})` }} />
                     <span className="class-name">{det.class_name}</span>
                     <span className="confidence">{(det.confidence * 100).toFixed(1)}%</span>
+                    <button
+                      className="btn btn-small btn-card-search"
+                      onClick={() => handleFindCards(det, idx)}
+                      disabled={searchingIdx === idx}
+                    >
+                      {searchingIdx === idx ? 'Поиск...' : 'Найти карточки'}
+                    </button>
                   </div>
                 );
               })}
             </div>
           </div>
+        )}
+
+        {cardsLoading && (
+          <div className="loading">
+            <Loader2 className="spin" />
+            <p>Поиск похожих карточек через CLIP...</p>
+          </div>
+        )}
+
+        {cardResults.length > 0 && searchedDetIdx !== null && segDetections[searchedDetIdx] && (
+          <CardsSection
+            results={cardResults}
+            detClassId={segDetections[searchedDetIdx].class_id}
+          />
         )}
       </div>
     </div>
