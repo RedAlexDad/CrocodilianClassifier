@@ -5,6 +5,7 @@ import { store } from './app/store/store';
 import { ClassifierWidget } from './widgets/Classifier/ClassifierWidget';
 import { ModelManagementWidget } from './widgets/ModelManagement/ModelManagementWidget';
 import { GalleryWidget } from './widgets/Gallery/GalleryWidget';
+import { SegmenterWidget } from './widgets/Segmenter/SegmenterWidget';
 import './index.css';
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ function App() {
                 <Link to="/" className="nav-link">Классификация</Link>
                 <Link to="/gallery" className="nav-link">Галерея</Link>
                 <Link to="/models" className="nav-link">Управление моделями</Link>
+                <Link to="/segment" className="nav-link">Сегментация</Link>
               </nav>
             </div>
           </div>
@@ -29,6 +31,7 @@ function App() {
               <Route path="/" element={<ClassifierWidget />} />
               <Route path="/gallery" element={<GalleryWidget />} />
               <Route path="/models" element={<ModelManagementWidget />} />
+              <Route path="/segment" element={<SegmenterWidget />} />
             </Routes>
           </div>
 

@@ -27,6 +27,9 @@ wheels/
 pip-log.txt
 pip-delete-this-directory.txt
 
+# Playwright screenshots
+.playwright-mcp/
+
 # IDE
 .vscode/
 .cursor/

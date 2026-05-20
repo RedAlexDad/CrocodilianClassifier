@@ -1,9 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit';
 import classifierReducer from '@/features/classifier/classifierSlice';
+import segmenterReducer from '@/features/segmentation/segmentationSlice';
 
 export const store = configureStore({
   reducer: {
     classifier: classifierReducer,
+    segmenter: segmenterReducer,
   },
 });
 
