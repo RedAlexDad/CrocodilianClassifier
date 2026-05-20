@@ -12,16 +12,17 @@
 - [x] Разметить bbox (прямоугольники)
 
 ### 1.2 Экспорт и подготовка датасета ✅
-- [x] Экспортировать из CVAT в формате YOLO 1.1
-- [x] Сконвертировать bbox → polygon (углы прямоугольника как полигон)
-- [x] Переложить в структуру `train/images`, `train/labels`, `val/images`, `val/labels`
-- [x] Ремэппить классы: alligator→1, caiman→1, crocodile→0
-- [x] Обновить `data.yaml`
+- [x] Распаковать `data/dataset/` (YOLO darknet format)
+- [x] Датасет: 298 изображений, bbox-разметка, 3 класса
+- [x] Ремэппинг: alligator→0, caiman→1, crocodile→2 (родной порядок)
 
 **Статус датасета:**
 ```
-train: 207 images, 207 labels (croc:28, allig:63, caim:116)
-val:   91 images,  91 labels  (croc:60, allig:11, caim:20)
+data/dataset/obj_train_data/
+  alligator: 74 images
+  caiman:    136 images
+  crocodile: 88 images
+  Всего: 298 изображений, bbox-формат (class x_center y_center width height)
 ```
 
 ---
@@ -147,24 +148,28 @@ val:   91 images,  91 labels  (croc:60, allig:11, caim:20)
 ## Технические заметки
 
 - **CVAT workaround:** Traefik несовместим с Docker 29.x → заменён на nginx-proxy в `~/cvat/docker-compose.override.yml`
+- **Формат меток:** bbox (class x_center y_center width height) — собирать в polygons перед обучением сегментации не нужно, YOLOv8-seg сам обучается на bbox + опционально masks
 - **YOLO ONNX на backend:** Модель содержит 3 выхода (boxes, scores, masks). Потребуется постпроцессинг (NMS, decode masks) на Python с `onnxruntime`.
 - **Цвета классов:** Крокодил → `#FF4444`, Аллигатор → `#4444FF`, Кайман → `#44FF44`
 - **CLIP на фронтенде:** Работает в браузере через Web Worker (`@huggingface/transformers`), модель SigLIP base (~400MB) загружается один раз.
 - **Совместимость:** Все изменения обратно совместимы с ДЗ1 (классификация продолжает работать).
-- **Val split:** Ребалансировка проведена — все 3 класса представлены в val
+- **Датасет:** `data/dataset/obj_train_data/` — darknet YOLO format, 298 изображений
+- **Train/Val split:** Скрипт `scripts/split_dataset.py` разобьёт на train/val перед обучением
 
 ---
 
 ## Структура файлов
 
 ```
-data/yolo/                           ← ✅ готов
-  train/images/, train/labels/
-  val/images/,   val/labels/
-  data.yaml
+data/dataset/                         ← ✅ готов
+  obj.names                           ← классы (alligator, caiman, crocodile)
+  obj.data                            ← конфиг для darknet
+  obj_train_data/*.jpeg, *.txt       ← изображения + bbox-разметка
 
 training/yolov8_segment/             ← создать
+  scripts/split_dataset.py           ← разбиение на train/val
   train.py, export_onnx.py
+  runs/                              ← эксперименты YOLO
 
 backend/core/
   services/segmentation_service.py  ← создать
