@@ -41,19 +41,19 @@ train-yolo-n: ## Run #1: yolov8n-seg 20ep Adam lr=0.001 batch=8
 	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg --optimizer Adam --lr 0.001 --epochs 20 --batch 8 --device $(DEVICE)
 
 train-yolo-s: ## Run #2: yolov8n-seg 20ep SGD lr=0.01 batch=8
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-sgd --optimizer SGD --lr 0.01 --epochs 20 --batch 8 --device $(DEVICE)
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-sgd --optimizer SGD --lr 0.001 --epochs 20 --batch 8 --device $(DEVICE)
 
 train-yolo-m: ## Run #3: yolov8n-seg 20ep AdamW lr=0.001 batch=8
 	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-adamw --optimizer AdamW --lr 0.001 --epochs 20 --batch 8 --device $(DEVICE)
 
-train-yolo-l: ## Run #4: yolov8n-seg 50ep Adam lr=0.001 batch=16
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-long --optimizer Adam --lr 0.001 --epochs 50 --batch 16 --device $(DEVICE)
+train-yolo-l: ## Run #4: yolov8n-seg 50ep Adam lr=0.0005 batch=8
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-long --optimizer Adam --lr 0.0005 --epochs 50 --batch 8 --device $(DEVICE)
 
-train-yolo-xl: ## Run #5: yolov8n-seg 50ep SGD lr=0.01 batch=16
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-long-sgd --optimizer SGD --lr 0.01 --epochs 50 --batch 16 --device $(DEVICE)
+train-yolo-xl: ## Run #5: yolov8n-seg 50ep SGD lr=0.01 batch=8
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-long-sgd --optimizer SGD --lr 0005 --epochs 50 --batch 8 --device $(DEVICE)
 
-train-yolo-xxl: ## Run #6: yolov8n-seg 50ep AdamW lr=0.001 batch=16
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-long-adamw --optimizer AdamW --lr 0.001 --epochs 50 --batch 16 --device $(DEVICE)
+train-yolo-xxl: ## Run #6: yolov8n-seg 50ep AdamW lr=0.001 batch=8
+	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg-long-adamw --optimizer AdamW --lr 0005 --epochs 50 --batch 8 --device $(DEVICE)
 
 train-compared: ## Сравнить все оптимизаторы
 	cd $(TRAINING_DIR) && $(PYTHON) main.py --model all --compare-optimizers
