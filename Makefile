@@ -1,425 +1,64 @@
-# Makefile для домашнего задания №1
-# РНС | МГТУ им. Баумана
-# Классификация: крокодил, аллигатор, кайман
+# Makefile для CrocodilianClassifier
+# Классификация: крокодил, аллигатор, кайман (ДЗ1)
+# Сегментация: YOLOv8-segment (ДЗ2)
+
+include makefiles/_vars.mk
+include makefiles/train.mk
+include makefiles/docker.mk
+include makefiles/infra.mk
+include makefiles/dev.mk
 
 # ==============================================================================
-# Переменные
-# ==============================================================================
-PYTHON ?= python3
-PIP ?= pip3
-DOCKER := docker
-DOCKER_COMPOSE := $(DOCKER) compose -f docker-compose.yml
-
-# Директории
-TRAINING_DIR := training
-DATA_DIR := data
-DJANGO_DIR := backend
-
-# Классы датасета
-CLASSES ?= крокодил аллигатор кайман
-IMAGES_PER_CLASS ?= 100
-
-# S3
-S3_BUCKET ?= dz1-media
-S3_ENDPOINT ?= http://localhost:9000
-
-# MLflow
-MLFLOW_URI ?= http://localhost:5000
-
-# Цвета
-GREEN  := $(shell tput setaf 2 2>/dev/null || echo "")
-YELLOW := $(shell tput setaf 3 2>/dev/null || echo "")
-BLUE   := $(shell tput setaf 4 2>/dev/null || echo "")
-RED    := $(shell tput setaf 1 2>/dev/null || echo "")
-NC     := $(shell tput sgr0 2>/dev/null || echo "")
-
-.PHONY: help git-template
-
-# ==============================================================================
-# Параметры обучения (можно переопределить через переменные)
-# ==============================================================================
-MODEL ?= cnn
-OPTIMIZER ?= adam
-EPOCHS ?= 50
-EPOCHS_STAGE1 ?= 50
-FINETUNE_LAYERS ?= 20
-LR ?= 0.001
-LR_FINETUNE ?= 0.0001
-BATCH_SIZE ?= 32
-WEIGHT_DECAY ?= 0.0001
-SEED ?= 42
-DEVICE ?= cuda
-
-# ==============================================================================
-# Основное
+# Help
 # ==============================================================================
 
 help: ## Показать справку
 	@echo ""
-	@echo "$(BLUE)Крокодилы - Классификатор ДЗ1$(NC)"
+	@echo "$(BLUE)Крокодилы — Классификатор / Сегментатор$(NC)"
 	@echo ""
-	@echo "$(GREEN)Обучение:$(NC)"
-	@echo "  $(MAKE) train-cnn                    Обучить CNN"
-	@echo "  $(MAKE) train-mlp                    Обучить MLP"
-	@echo "  $(MAKE) train-resnet20               Обучить ResNet20"
-@echo "  $(MAKE) train-yolo-seg              Обучить YOLOv8-segment (n, 50ep)"
-	@echo "  $(MAKE) train-yolo-n                yolov8n-seg 50ep AdamW batch=4"
-	@echo "  $(MAKE) train-yolo-s                yolov8s-seg 100ep SGD batch=8 lr=0.01"
-	@echo "  $(MAKE) train-yolo-m                yolov8m-seg 100ep Adam batch=8 lr=0.001"
-	@echo "  $(MAKE) train-yolo-l                yolov8l-seg 100ep SGD batch=4 lr=0.01"
-	@echo "  $(MAKE) train-all                    Обучить все модели"
-	@echo "  $(MAKE) train MODEL=cnn OPTIMIZER=sgd EPOCHS=100 LR=0.01"
+	@echo "$(GREEN)Обучение классификация:$(NC)"
+	@echo "  $(MAKE) train-cnn                   CNN"
+	@echo "  $(MAKE) train-mlp                   MLP"
+	@echo "  $(MAKE) train-resnet20              ResNet20"
+	@echo "  $(MAKE) train-mobilenet            MobileNetV2"
+	@echo "  $(MAKE) train-all                  Все модели"
+	@echo ""
+	@echo "$(GREEN)Обучение сегментация (YOLOv8):$(NC)"
+	@echo "  $(MAKE) train-yolo-n                yolov8n-seg 50ep batch=4"
+	@echo "  $(MAKE) train-yolo-s                yolov8s-seg 100ep batch=8 SGD lr=0.01"
+	@echo "  $(MAKE) train-yolo-m                yolov8m-seg 100ep batch=8 Adam lr=0.001"
+	@echo "  $(MAKE) train-yolo-l                yolov8l-seg 100ep batch=4 SGD lr=0.01"
 	@echo ""
 	@echo "$(GREEN)Docker:$(NC)"
-	@echo "  $(MAKE) full-up                      Запустить все сервисы"
-	@echo "  $(MAKE) full-down                    Остановить все сервисы"
-	@echo "  $(MAKE) deploy                       Пересобрать и запустить все"
-	@echo "  $(MAKE) build                        Собрать Docker образы"
-	@echo "  $(MAKE) backend-rebuild              Пересобрать Django (backend)"
-	@echo "  $(MAKE) frontend-rebuild             Пересобрать React (frontend)"
-	@echo "  $(MAKE) backend-restart              Перезапустить Django (быстро)"
-	@echo "  $(MAKE) frontend-restart             Перезапустить React (быстро)"
-	@echo "  $(MAKE) web-restart                  Перезапустить backend + frontend (быстро)"
-	@echo "  $(MAKE) logs service=backend         Логи сервиса"
-	@echo "  $(MAKE) clean                        Очистить контейнеры"
+	@echo "  $(MAKE) full-up                     Все сервисы"
+	@echo "  $(MAKE) full-down                   Остановить"
+	@echo "  $(MAKE) deploy                      Пересобрать и запустить"
+	@echo "  $(MAKE) backend-restart             Перезапустить Django"
+	@echo "  $(MAKE) frontend-restart            Перезапустить React"
+	@echo "  $(MAKE) logs service=backend        Логи"
 	@echo ""
-	@echo "$(GREEN)MLflow:$(NC)"
-	@echo "  $(MAKE) mlflow-up                    Запустить MLflow"
-	@echo "  $(MAKE) mlflow-logs                  Логи MLflow"
-	@echo "  $(MAKE) list-mlflow-runs             Список запусков MLflow"
-	@echo "  $(MAKE) add-mlflow-model RUN_ID=<id> Добавить модель в репозиторий"
+	@echo "$(GREEN)MLflow / MinIO:$(NC)"
+	@echo "  $(MAKE) mlflow-up                   MLflow сервер"
+	@echo "  $(MAKE) list-mlflow-runs             Список запусков"
+	@echo "  $(MAKE) minio-up                    MinIO"
+	@echo "  $(MAKE) minio-console               MinIO Console"
 	@echo ""
-	@echo "$(GREEN)MinIO:$(NC)"
-	@echo "  $(MAKE) minio-up                     Запустить MinIO"
-	@echo "  $(MAKE) minio-console                Открыть MinIO Console"
-	@echo "  $(MAKE) minio-clear                  Очистить все бакеты MinIO"
-	@echo ""
-	@echo "$(GREEN)Django (Backend):$(NC)"
-	@echo "  $(MAKE) run-django                   Запустить Django локально"
-	@echo "  $(MAKE) migrate                      Выполнить миграции"
-	@echo "  $(MAKE) collectstatic                Собрать static файлы"
-	@echo ""
-	@echo "$(GREEN)Frontend:$(NC)"
-	@echo "  $(MAKE) frontend-dev                 Запустить dev сервер"
-	@echo "  $(MAKE) frontend-build               Собрать production"
+	@echo "$(GREEN)Django / Frontend:$(NC)"
+	@echo "  $(MAKE) run-django                  Django локально"
+	@echo "  $(MAKE) migrate                     Миграции БД"
+	@echo "  $(MAKE) frontend-dev                React dev сервер"
 	@echo ""
 	@echo "$(GREEN)Датасет:$(NC)"
-	@echo "  $(MAKE) download CLASSES='крокодил аллигатор кайман'  Скачать изображения"
-	@echo "  $(MAKE) dataset-stats                Показать статистику"
+	@echo "  $(MAKE) download                    Скачать изображения"
+	@echo "  $(MAKE) dataset-stats               Статистика"
 	@echo ""
 	@echo "$(GREEN)Git:$(NC)"
-	@echo "  $(MAKE) git-template                 Подключить шаблон сообщения коммита"
-
-# ==============================================================================
-# Обучение моделей
-# ==============================================================================
-
-train: ## Обучить: make train MODEL=cnn OPTIMIZER=adam EPOCHS=50 LR=0.001 DEVICE=cpu
-	@echo "$(GREEN)Обучение: MODEL=$(MODEL), OPTIMIZER=$(OPTIMIZER), EPOCHS=$(EPOCHS), DEVICE=$(DEVICE)$(NC)"
-	cd $(TRAINING_DIR) && $(PYTHON) main.py \
-		--model $(MODEL) \
-		--optimizer $(OPTIMIZER) \
-		--epochs $(EPOCHS) \
-		--epochs-stage1 $(EPOCHS_STAGE1) \
-		--finetune-layers $(FINETUNE_LAYERS) \
-		--lr $(LR) \
-		--lr-finetune $(LR_FINETUNE) \
-		--batch-size $(BATCH_SIZE) \
-		--weight-decay $(WEIGHT_DECAY) \
-		--seed $(SEED) \
-		--device $(DEVICE)
-
-train-all: ## Обучить все модели
-	@echo "$(GREEN)Обучение всех моделей...$(NC)"
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --model all
-
-# ==============================================================================
-# Shortcut команды для обучения (используют переменные above)
-# ==============================================================================
-
-train-mlp: ## make train-mlp
-	$(MAKE) train MODEL=mlp
-
-train-cnn: ## make train-cnn
-	$(MAKE) train MODEL=cnn OPTIMIZER=sgd
-
-train-resnet20: ## make train-resnet20
-	$(MAKE) train MODEL=resnet20
-
-train-mobilenet: ## make train-mobilenet
-	$(MAKE) train MODEL=mobilenet
-
-train-yolo-seg: ## Обучить YOLOv8-segment: python main.py --task segment
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg --optimizer AdamW --lr 0.001 --epochs 50 --batch 4 --device $(DEVICE)
-
-train-yolo-n: ## yolov8n-seg: 50ep, batch=4, AdamW
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8n-seg --optimizer AdamW --lr 0.001 --epochs 50 --batch 4 --device $(DEVICE)
-
-train-yolo-s: ## yolov8s-seg: 100ep, batch=8, SGD, lr=0.01
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8s-seg --optimizer SGD --lr 0.01 --epochs 100 --batch 8 --device $(DEVICE)
-
-train-yolo-m: ## yolov8m-seg: 100ep, batch=8, Adam, lr=0.001
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8m-seg --optimizer Adam --lr 0.001 --epochs 100 --batch 8 --device $(DEVICE)
-
-train-yolo-l: ## yolov8l-seg: 100ep, batch=4, SGD, lr=0.01
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --task segment --model yolov8l-seg --optimizer SGD --lr 0.01 --epochs 100 --batch 4 --device $(DEVICE)
-
-train-compared: ## Сравнить все оптимизаторы
-	cd $(TRAINING_DIR) && $(PYTHON) main.py --model all --compare-optimizers
-
-# ==============================================================================
-# Docker Compose
-# ==============================================================================
-
-full-up: ## Запустить все сервисы (Frontend + Django + MinIO + MLflow)
-	@echo "$(GREEN)Запуск всех сервисов...$(NC)"
-	$(DOCKER_COMPOSE) up -d
-	@sleep 5
-	@echo "$(GREEN)Сервисы запущены!$(NC)"
-	@echo "$(YELLOW)Frontend:   http://localhost:5173$(NC)"
-	@echo "$(YELLOW)Django:      http://localhost:8000$(NC)"
-	@echo "$(YELLOW)MinIO API:   http://localhost:9000$(NC)"
-	@echo "$(YELLOW)MinIO Console: http://localhost:9001$(NC)"
-	@echo "$(YELLOW)MLflow:      http://localhost:5000$(NC)"
-
-full-down: ## Остановить все сервисы
-	@echo "$(GREEN)Остановка сервисов...$(NC)"
-	$(DOCKER_COMPOSE) down
-
-full-restart: ## Перезапустить все сервисы
-	$(MAKE) full-down
-	$(MAKE) full-up
-
-build: ## Собрать Docker образ (с кэшем)
-	@echo "$(GREEN)Сборка Docker образа...$(NC)"
-	$(DOCKER_COMPOSE) build
-
-build-no-cache: ## Собрать Docker образ без кэша
-	@echo "$(GREEN)Сборка Docker образа (без кэша)...$(NC)"
-	$(DOCKER_COMPOSE) build --no-cache
-
-rebuild: ## Пересобрать Docker образ (сначала остановить, затем собрать)
-	@echo "$(GREEN)Пересборка Docker образа...$(NC)"
-	$(DOCKER_COMPOSE) down --remove-orphans
-	$(DOCKER_COMPOSE) build
-	$(DOCKER_COMPOSE) up -d
-
-deploy: ## Пересобрать и запустить все сервисы
-	@echo "$(GREEN)Деплой...$(NC)"
-	$(DOCKER_COMPOSE) down --remove-orphans
-	$(DOCKER_COMPOSE) build
-	$(DOCKER_COMPOSE) up -d
-	@sleep 5
-	@echo "$(GREEN)Деплой завершен!$(NC)"
-	@echo "$(YELLOW)Frontend:   http://localhost:5173$(NC)"
-	@echo "$(YELLOW)Django:      http://localhost:8000$(NC)"
-	@echo "$(YELLOW)MinIO API:   http://localhost:9000$(NC)"
-	@echo "$(YELLOW)MinIO Console: http://localhost:9001$(NC)"
-	@echo "$(YELLOW)MLflow:      http://localhost:5000$(NC)"
-
-# ==============================================================================
-# Frontend
-# ==============================================================================
-
-frontend-build: ## Собрать Frontend
-	@echo "$(GREEN)Сборка Frontend...$(NC)"
-	cd frontend && node /home/redalexdad/.npm-global/node_modules/vite/bin/vite.js build
-
-frontend-dev: ## Запустить Frontend в режиме разработки
-	@echo "$(GREEN)Запуск Frontend...$(NC)"
-	cd frontend && node /home/redalexdad/.npm-global/node_modules/vite/bin/vite.js
-
-frontend-rebuild: ## Пересобрать и перезапустить только Frontend контейнер
-	@echo "$(GREEN)Пересборка Frontend...$(NC)"
-	$(DOCKER_COMPOSE) build frontend
-	$(DOCKER_COMPOSE) up -d --no-deps --force-recreate frontend
-
-frontend-restart: ## Перезапустить Frontend (без пересборки, быстро)
-	@echo "$(GREEN)Перезапуск Frontend...$(NC)"
-	$(DOCKER_COMPOSE) restart frontend
-
-backend-rebuild: ## Пересобрать и перезапустить Django (backend)
-	@echo "$(GREEN)Пересборка Backend (Django)...$(NC)"
-	$(DOCKER_COMPOSE) build backend
-	$(DOCKER_COMPOSE) up -d --no-deps --force-recreate backend
-
-backend-restart: ## Перезапустить Django (без пересборки, быстро)
-	@echo "$(GREEN)Перезапуск Backend (Django)...$(NC)"
-	$(DOCKER_COMPOSE) restart backend
-
-web-restart: ## Перезапустить backend + frontend вместе (быстро)
-	@echo "$(GREEN)Перезапуск Backend и Frontend...$(NC)"
-	$(DOCKER_COMPOSE) restart backend frontend
-
-restart: web-restart ## Алиас для web-restart
-
-web-rebuild: backend-rebuild ## Алиас для backend-rebuild
-
-logs: ## Логи сервиса (service=backend|mlflow|minio|frontend)
-	$(DOCKER_COMPOSE) logs -f $(service)
-
-frontend-logs: ## Логи frontend
-	$(DOCKER_COMPOSE) logs -f frontend
-
-backend-logs: ## Логи backend
-	$(DOCKER_COMPOSE) logs -f backend
-
-web-logs: ## Логи backend + frontend вместе
-	$(DOCKER_COMPOSE) logs -f backend frontend
-
-mlflow-logs: ## Логи mlflow
-	$(DOCKER_COMPOSE) logs -f mlflow
-
-minio-logs: ## Логи minio
-	$(DOCKER_COMPOSE) logs -f minio
+	@echo "  $(MAKE) git-template                Подключить шаблон коммита"
 
 git-template: ## Подключить шаблон сообщения коммита (.gitmessage)
 	@git config commit.template "$(CURDIR)/.gitmessage"
 	@echo "$(GREEN)commit.template -> $(CURDIR)/.gitmessage$(NC)"
 
-clean: ## Очистить Docker ресурсы
-	@echo "$(YELLOW)Очистка...$(NC)"
-	$(DOCKER_COMPOSE) down -v
-	$(DOCKER) system prune -f
-
-# ==============================================================================
-# MLflow
-# ==============================================================================
-
-mlflow-up: ## Запустить MLflow сервер
-	@echo "$(GREEN)Запуск MLflow...$(NC)"
-	$(DOCKER_COMPOSE) up -d mlflow minio minio-init
-	@echo "$(YELLOW)MLflow: http://localhost:5000$(NC)"
-
-# ==============================================================================
-# MLflow модели
-# ==============================================================================
-
-MLRUNS_DIR := mlruns
-
-list-mlflow-runs: ## Показать все запуски MLflow
-	@echo "$(GREEN)Запуски MLflow:${NC}"
-	@python3 scripts/list_mlflow_runs.py
-
-add-mlflow-model: ## Добавить модель MLflow в репозиторий (требуется RUN_ID)
-ifndef RUN_ID
-	@echo "$(RED)Ошибка: необходимо указать RUN_ID${NC}"
-	@echo "Использование: $(GREEN)make add-mlflow-model RUN_ID=<run_id>${NC}"
-	@echo ""
-	@$(MAKE) list-mlflow-runs
-	@exit 1
-endif
-	@echo "$(GREEN)Добавление модели $(RUN_ID) в репозиторий...${NC}"
-	@mkdir -p $(MLRUNS_DIR)/$(RUN_ID)/artifacts
-	@python3 scripts/download_mlflow_artifacts.py \
-		"1" "$(RUN_ID)" \
-		"$(MLRUNS_DIR)/$(RUN_ID)/artifacts"
-	@echo ""
-	@echo "$(GREEN)✓ Модель добавлена!${NC}"
-	@echo "$(CYAN)Следующие шаги:${NC}"
-	@echo "  1. $(GREEN)git add $(MLRUNS_DIR)/$(RUN_ID)/${NC}"
-	@echo "  2. $(GREEN)git commit -m 'feat: добавить модель $(RUN_ID)'${NC}"
-	@echo "  3. $(GREEN)git push${NC}"
-
-# ==============================================================================
-# MinIO
-# ==============================================================================
-
-minio-up: ## Запустить MinIO
-	@echo "$(GREEN)Запуск MinIO...$(NC)"
-	$(DOCKER_COMPOSE) up -d minio minio-init
-	@echo "$(YELLOW)MinIO API:   http://localhost:9000$(NC)"
-	@echo "$(YELLOW)MinIO Console: http://localhost:9001$(NC)"
-
-minio-console: ## MinIO Console
-	@echo "$(BLUE)Открытие MinIO Console...$(NC)"
-	@xdg-open http://localhost:9001 || echo "Откройте http://localhost:9001"
-
-minio-clear: ## Очистить все бакеты MinIO
-	@echo "$(YELLOW)Очистка всех бакетов MinIO...$(NC)"
-	@$(DOCKER_COMPOSE) exec backend python -c "\
-import boto3; \
-from django.conf import settings; \
-import os; \
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings'); \
-import django; \
-django.setup(); \
-s3 = boto3.client('s3', endpoint_url=settings.AWS_S3_ENDPOINT_URL, aws_access_key_id='minioadmin', aws_secret_access_key='minioadmin'); \
-buckets = ['crocodilian', 'crocodilian-artifacts', 'dz1-media', 'mlflow-artifacts']; \
-[print(f'Очистка {b}...') or [s3.delete_objects(Bucket=b, Delete={'Objects': [{'Key': obj['Key']} for obj in s3.list_objects_v2(Bucket=b).get('Contents', [])[i:i+1000]]}) for i in range(0, len(s3.list_objects_v2(Bucket=b).get('Contents', [])), 1000)] or print(f'✓ {b} очищен') for b in buckets if s3.list_objects_v2(Bucket=b).get('Contents')]; \
-print('$(GREEN)Все бакеты очищены!$(NC)'); \
-"
-	@echo "$(GREEN)✓ MinIO полностью очищен$(NC)"
-
-# ==============================================================================
-# Django
-# ==============================================================================
-
-run-django: ## Запустить Django локально
-	@echo "$(GREEN)Запуск Django...$(NC)"
-	cd $(DJANGO_DIR)/web-site-dl && $(PYTHON) manage.py runserver
-
-collectstatic: ## Собрать static файлы
-	cd $(DJANGO_DIR)/web-site-dl && $(PYTHON) manage.py collectstatic --noinput
-
-migrate: ## Миграции БД
-	cd $(DJANGO_DIR)/web-site-dl && $(PYTHON) manage.py migrate
-
-shell: ## Django shell
-	cd $(DJANGO_DIR)/web-site-dl && $(PYTHON) manage.py shell
-
-# ==============================================================================
-# Датасет
-# ==============================================================================
-
-download: ## Скачать изображения (CLASSES='крокодил аллигатор кайман')
-	@echo "$(GREEN)Скачивание изображений...$(NC)"
-	$(PYTHON) download_images.py --classes $(CLASSES) --limit $(IMAGES_PER_CLASS)
-
-dataset-stats: ## Статистика датасета
-	@echo "$(GREEN)Статистика датасета:$(NC)"
-	@for class in $(CLASSES); do \
-		count=$$(ls $(DATA_DIR)/$$class/*.jpeg 2>/dev/null | wc -l); \
-		echo "  $$class: $$count изображений"; \
-	done
-
-dataset-check-duplicates: ## Проверить дубликаты в датасете (без удаления)
-	@echo "$(GREEN)Проверка дубликатов в датасете...$(NC)"
-	$(PYTHON) scripts/remove_duplicates.py --data-dir $(DATA_DIR) --dry-run
-
-dataset-remove-duplicates: ## Удалить дубликаты из датасета
-	@echo "$(YELLOW)Удаление дубликатов из датасета...$(NC)"
-	$(PYTHON) scripts/remove_duplicates.py --data-dir $(DATA_DIR)
-	@echo "$(GREEN)✓ Дубликаты удалены$(NC)"
-
-# ==============================================================================
-# Установка
-# ==============================================================================
-
-install: ## Установить зависимости
-	@echo "$(GREEN)Установка зависимостей...$(NC)"
-	$(PIP) install -r $(DJANGO_DIR)/requirements.txt
-	$(PIP) install torch torchvision mlflow
-
-install-dev: ## Зависимости для разработки
-	$(MAKE) install
-	$(PIP) install black flake8 mypy
-
-# ==============================================================================
-# Тестирование
-# ==============================================================================
-
-test: ## Запустить тесты
-	cd $(DJANGO_DIR)/web-site-dl && $(PYTHON) manage.py test
-
-lint: ## Проверка кода
-	@command -v flake8 >/dev/null 2>&1 && cd . && flake8 . --ignore=E501,W503 || echo "flake8 не установлен"
-
-format: ## Форматировать код
-	@command -v black >/dev/null 2>&1 && black . || echo "black не установлен"
-
-# ==============================================================================
-# По умолчанию
-# ==============================================================================
-
 default: help
+
+.PHONY: help git-template default
