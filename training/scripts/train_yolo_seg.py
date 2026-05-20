@@ -14,6 +14,8 @@ import urllib.request
 from pathlib import Path
 
 import torch
+from ultralytics.utils import SETTINGS
+SETTINGS["mlflow"] = False
 from ultralytics import YOLO
 
 import mlflow
@@ -97,7 +99,7 @@ def train_yolo_segment(
     run_name = f"{model_name}-e{epochs}-bs{batch}-{optimizer.lower()}"
     project_dir = ROOT_DIR / "yolo8_segment" / run_name
 
-    with mlflow.start_run(run_name=run_name, experiment_name="yolo8-segment"):
+    with mlflow.start_run(run_name=run_name):
         mlflow.log_params({
             "model": model_name,
             "optimizer": optimizer,
