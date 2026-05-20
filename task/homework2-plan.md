@@ -8,7 +8,7 @@
 
 ### 1.1 Подготовка датасета для разметки ✅
 - [x] Загрузить изображения (298 на 3 класса) в CVAT
-- [x] Создать 1 проект с 3 лейблами: alligator, caiman, crocodile
+- [x] Создать 1 проект с 3 лейблами: alligator, cayman, crocodile
 - [x] Разметить bbox (прямоугольники)
 
 ### 1.2 Экспорт и подготовка датасета ✅
@@ -30,19 +30,33 @@ data/dataset/obj_train_data/
 ## Этап 2. Обучение YOLOv8-segment (не менее 4 запусков)
 
 ### 2.1 Создание окружения
-- [ ] Создать `training/yolov8_segment/` — папка для YOLO-экспериментов
-- [ ] Установить `ultralytics` в отдельное окружение
-- [ ] Настроить MLflow-трекинг для YOLO-экспериментов
+- [x] Создать `data/yolo8_segment/` — папка с датасетом в формате YOLO
+- [x] Скрипт конвертации `scripts/convert_to_yolo_seg.py` (bbox → polygon)
+- [x] MLflow трекинг интегрирован (`training/utils/mlflow_utils.py`)
+- [x] Скрипт обучения `scripts/train_yolo_seg.py`
 
 ### 2.2 Запуск 4+ тренировок с разными параметрами
 
 | # | Модель | imgsz | epochs | batch | Optimizer | LR | Статус |
 |---|--------|-------|--------|-------|-----------|----|--------|
-| 1 | yolov8n-seg | 640 | 50 | 8 | Adam | 0.001 | ⏳ |
+| 1 | yolov8n-seg | 640 | 50 | 4 | AdamW(auto) | 0.00143 | ✅ Завершено |
 | 2 | yolov8s-seg | 640 | 100 | 8 | SGD | 0.01 | ⏳ |
 | 3 | yolov8n-seg | 640 | 50 | 8 | SGD | 0.01 | ⏳ |
 | 4 | yolov8s-seg | 640 | 100 | 8 | Adam | 0.001 | ⏳ |
 
+**Запуск 1 — результаты (best.pt):**
+
+| Класс | Precision | Recall | mAP50 | mAP50-95 |
+|-------|-----------|--------|-------|----------|
+| alligator | 0.864 | 0.900 | 0.932 | 0.844 |
+| cayman | 0.953 | 1.000 | 0.995 | 0.882 |
+| crocodile | 0.841 | 0.666 | 0.810 | 0.711 |
+| **all** | **0.886** | **0.855** | **0.912** | **0.831** |
+
+**MLflow:** http://localhost:5000/#/experiments/2/runs/4811636994f74b53ae88e54e54106d45
+**Модель:** `yolo8_segment/train/weights/best.pt`
+
+- [ ] Запустить оставшиеся 3 тренировки (yolov8s, SGD, и т.д.)
 - [ ] Сравнить метрики: mAP@0.5, mAP@0.5:0.95, precision, recall
 - [ ] Выбрать лучшую модель по mAP
 
@@ -132,7 +146,7 @@ data/dataset/obj_train_data/
 Этап 1 (CVAT разметка) ✅
     │
     ▼
-Этап 2 (обучение YOLO x4 → экспорт ONNX)
+Этап 2 (обучение YOLO x1/4 ✅, осталось 3 тренировки → экспорт ONNX)
     │
     ├──────────────────┐
     ▼                   ▼
@@ -148,32 +162,45 @@ data/dataset/obj_train_data/
 ## Технические заметки
 
 - **CVAT workaround:** Traefik несовместим с Docker 29.x → заменён на nginx-proxy в `~/cvat/docker-compose.override.yml`
-- **Формат меток:** bbox (class x_center y_center width height) — собирать в polygons перед обучением сегментации не нужно, YOLOv8-seg сам обучается на bbox + опционально masks
+- **Формат меток:** bbox (class x_center y_center width height) — YOLOv8-seg обучается на bbox + masks
+- **Конвертация:** `scripts/convert_to_yolo_seg.py` — bbox → polygon (8 точек), split 90/10 train/val
+- **Датасет:** `data/yolo8_segment/` — 268 train / 30 val изображений
 - **YOLO ONNX на backend:** Модель содержит 3 выхода (boxes, scores, masks). Потребуется постпроцессинг (NMS, decode masks) на Python с `onnxruntime`.
 - **Цвета классов:** Крокодил → `#FF4444`, Аллигатор → `#4444FF`, Кайман → `#44FF44`
 - **CLIP на фронтенде:** Работает в браузере через Web Worker (`@huggingface/transformers`), модель SigLIP base (~400MB) загружается один раз.
 - **Совместимость:** Все изменения обратно совместимы с ДЗ1 (классификация продолжает работать).
-- **Датасет:** `data/dataset/obj_train_data/` — darknet YOLO format, 298 изображений
-- **Train/Val split:** Скрипт `scripts/split_dataset.py` разобьёт на train/val перед обучением
+- **Train/Val split:** `scripts/convert_to_yolo_seg.py` разбивает на train/val перед обучением
+- **Torch версия:** Обновлено torch 2.6.0 + torchvision 0.21.0 (cu124) для совместимости с ultralytics
 
 ---
 
 ## Структура файлов
 
 ```
-data/dataset/                         ← ✅ готов
-  obj.names                           ← классы (alligator, caiman, crocodile)
-  obj.data                            ← конфиг для darknet
-  obj_train_data/*.jpeg, *.txt       ← изображения + bbox-разметка
+data/dataset/                          ← ✅ аннотация CVAT (bbox)
+  obj.names                            ← классы (alligator, cayman, crocodile)
+  obj.data                             ← конфиг для darknet
+  obj_train_data/*.jpeg, *.txt        ← изображения + bbox-разметка
 
-training/yolov8_segment/             ← создать
-  scripts/split_dataset.py           ← разбиение на train/val
-  train.py, export_onnx.py
-  runs/                              ← эксперименты YOLO
+data/yolo8_segment/                   ← ✅ подготовленный YOLO-датасет
+  dataset.yaml                         ← конфиг для YOLO
+  images/train/*.jpeg                  ← 268 изображений
+  images/val/*.jpeg                    ← 30 изображений
+  labels/train/*.txt                  ← polygon-разметка
+  labels/val/*.txt
+
+yolo8_segment/train/                   ← результаты обучения
+  weights/best.pt                      ← лучшая модель
+  weights/last.pt
+  results.png
+
+scripts/
+  convert_to_yolo_seg.py              ← ✅ конвертация bbox → polygon
+  train_yolo_seg.py                   ← ✅ обучение с MLflow
 
 backend/core/
-  services/segmentation_service.py  ← создать
-  api/segmentation_views.py         ← создать
+  services/segmentation_service.py   ← создать
+  api/segmentation_views.py           ← создать
 
 frontend/src/
   widgets/Segmenter/                 ← создать
