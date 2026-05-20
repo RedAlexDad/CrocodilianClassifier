@@ -8,10 +8,9 @@ include makefiles/docker.mk
 include makefiles/infra.mk
 include makefiles/dev.mk
 
-# ==============================================================================
-# Help
-# ==============================================================================
+.DEFAULT_GOAL := help
 
+.PHONY: help
 help: ## Показать справку
 	@echo ""
 	@echo "$(BLUE)Крокодилы — Классификатор / Сегментатор$(NC)"
@@ -24,12 +23,12 @@ help: ## Показать справку
 	@echo "  $(MAKE) train-all                  Все модели"
 	@echo ""
 	@echo "$(GREEN)Обучение сегментация (YOLOv8n):$(NC)"
-	@echo "  $(MAKE) train-yolo-n                Run #1: yolov8n-seg 50ep Adam lr=0.001 batch=8"
-	@echo "  $(MAKE) train-yolo-s                Run #2: yolov8n-seg 50ep SGD lr=0.01 batch=8"
-	@echo "  $(MAKE) train-yolo-m                Run #3: yolov8n-seg 50ep AdamW lr=0.001 batch=8"
-	@echo "  $(MAKE) train-yolo-l                Run #4: yolov8n-seg 100ep Adam lr=0.001 batch=16"
-	@echo "  $(MAKE) train-yolo-xl               Run #5: yolov8n-seg 100ep SGD lr=0.01 batch=16"
-	@echo "  $(MAKE) train-yolo-xxl              Run #6: yolov8n-seg 100ep AdamW lr=0.001 batch=16"
+	@echo "  $(MAKE) train-yolo-n                Run #1: yolov8n-seg 20ep Adam lr=0.001 batch=8"
+	@echo "  $(MAKE) train-yolo-s                Run #2: yolov8n-seg 20ep SGD lr=0.01 batch=8"
+	@echo "  $(MAKE) train-yolo-m                Run #3: yolov8n-seg 20ep AdamW lr=0.001 batch=8"
+	@echo "  $(MAKE) train-yolo-l                Run #4: yolov8n-seg 50ep Adam lr=0.001 batch=16"
+	@echo "  $(MAKE) train-yolo-xl               Run #5: yolov8n-seg 50ep SGD lr=0.01 batch=16"
+	@echo "  $(MAKE) train-yolo-xxl              Run #6: yolov8n-seg 50ep AdamW lr=0.001 batch=16"
 	@echo ""
 	@echo "$(GREEN)Docker:$(NC)"
 	@echo "  $(MAKE) full-up                     Все сервисы"
@@ -61,6 +60,4 @@ git-template: ## Подключить шаблон сообщения комми
 	@git config commit.template "$(CURDIR)/.gitmessage"
 	@echo "$(GREEN)commit.template -> $(CURDIR)/.gitmessage$(NC)"
 
-default: help
-
-.PHONY: help git-template default
+.PHONY: help git-template

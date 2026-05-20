@@ -23,9 +23,12 @@ from configs.config import BASE_DIR as ROOT_DIR
 
 
 MODEL_ALIASES = {
-    "yolov8n-seg": "yolov8n-seg.pt",
-    "yolov8s-seg": "yolov8s-seg.pt",
-    "yolov8m-seg": "yolov8m-seg.pt",
+    "yolov8n-seg":            "yolov8n-seg.pt",
+    "yolov8n-seg-sgd":       "yolov8n-seg.pt",
+    "yolov8n-seg-adamw":     "yolov8n-seg.pt",
+    "yolov8n-seg-long":       "yolov8n-seg.pt",
+    "yolov8n-seg-long-sgd":  "yolov8n-seg.pt",
+    "yolov8n-seg-long-adamw":"yolov8n-seg.pt",
 }
 
 YOLO_MODELS = list(MODEL_ALIASES.keys())
