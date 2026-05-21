@@ -7,12 +7,11 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from core.services.clip_service import search_similar_cards
-
-
 @csrf_exempt
 @require_POST
 def card_search_api(request):
+    from core.services.clip_service import search_similar_cards
+
     try:
         body = json.loads(request.body)
         image_data = body.get("image_data")
