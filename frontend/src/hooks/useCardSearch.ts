@@ -7,6 +7,8 @@ export interface CardMatch {
   similarity: number;
 }
 
+export type DescMode = 'short' | 'medium' | 'long';
+
 export interface CardSearchState {
   results: CardMatch[];
   isLoading: boolean;
@@ -20,12 +22,13 @@ export function useCardSearch() {
     error: null,
   });
 
-  const searchCards = useCallback(async (imageDataUrl: string, classId?: number) => {
+  const searchCards = useCallback(async (imageDataUrl: string, classId?: number, descMode: DescMode = 'medium') => {
     setState({ results: [], isLoading: true, error: null });
 
     try {
       const body: Record<string, unknown> = { image_data: imageDataUrl, top_k: 5 };
       if (classId !== undefined) body.class_id = classId;
+      body.desc_mode = descMode;
       const response = await fetch("/api/card-search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

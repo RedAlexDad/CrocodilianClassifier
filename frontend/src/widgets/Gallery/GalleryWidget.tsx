@@ -2,7 +2,7 @@ import { useCallback, useState, useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { CLASS_COLORS, drawMasksOnCanvas, type Detection } from '@/features/segmentation/segmentUtils';
 import { cropDetection, canvasToDataUrl } from '@/features/segmentation/cropUtils';
-import { useCardSearch } from '@/hooks/useCardSearch';
+import { useCardSearch, type DescMode } from '@/hooks/useCardSearch';
 import type { CardMatch } from '@/hooks/useCardSearch';
 import './GalleryWidget.css';
 
@@ -21,10 +21,15 @@ interface PredictionResult {
 
 const CLASS_NAMES_RU = ['Аллигатор', 'Кайман', 'Крокодил'];
 
-function CardsSection({ results, detClassId }: { results: CardMatch[]; detClassId: number }) {
+function CardsSection({ results, detClassId, descMode }: { results: CardMatch[]; detClassId: number; descMode: DescMode }) {
   return (
     <div className="cards-section">
-      <h3>Похожие карточки для: {CLASS_NAMES_RU[detClassId]}</h3>
+      <div className="cards-header">
+        <h3>Похожие карточки для: {CLASS_NAMES_RU[detClassId]}</h3>
+        <span className="desc-mode-badge">
+          {descMode === 'short' ? '5-7 слов' : descMode === 'medium' ? '12-15 слов' : '25-35 слов'}
+        </span>
+      </div>
       <div className="cards-grid">
         {results.map((card) => {
           const cardClassId = Math.floor((card.card_id - 1) / 12);
@@ -66,6 +71,7 @@ export function GalleryWidget() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const segImageRef = useRef<HTMLImageElement>(null);
   const [searchingIdx, setSearchingIdx] = useState<number | null>(null);
+  const [descMode, setDescMode] = useState<DescMode>('medium');
   const { results: cardResults, isLoading: cardsLoading, searchCards } = useCardSearch();
   const [searchedDetIdx, setSearchedDetIdx] = useState<number | null>(null);
 
@@ -180,12 +186,12 @@ export function GalleryWidget() {
     try {
       const cropCanvas = cropDetection(img, detection);
       const dataUrl = canvasToDataUrl(cropCanvas);
-      await searchCards(dataUrl, detection.class_id);
+      await searchCards(dataUrl, detection.class_id, descMode);
       setSearchedDetIdx(idx);
     } finally {
       setSearchingIdx(null);
     }
-  }, [searchCards]);
+  }, [searchCards, descMode]);
 
   return (
     <div className="gallery-widget">
@@ -295,6 +301,18 @@ export function GalleryWidget() {
               />
             </div>
             <div className="seg-detections">
+              <div className="desc-mode-toggle">
+                <span className="toggle-label">Описание карточек:</span>
+                {(['short', 'medium', 'long'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    className={`btn btn-small ${descMode === mode ? 'btn-active' : ''}`}
+                    onClick={() => setDescMode(mode)}
+                  >
+                    {mode === 'short' ? '5-7 слов' : mode === 'medium' ? '12-15 слов' : '25-35 слов'}
+                  </button>
+                ))}
+              </div>
               {segDetections.map((det, idx) => {
                 const color = CLASS_COLORS[det.class_id] || { r: 128, g: 128, b: 128 };
                 return (
@@ -327,6 +345,7 @@ export function GalleryWidget() {
           <CardsSection
             results={cardResults}
             detClassId={segDetections[searchedDetIdx].class_id}
+            descMode={descMode}
           />
         )}
       </div>

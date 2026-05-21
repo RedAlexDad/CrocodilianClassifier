@@ -17,6 +17,10 @@ def card_search_api(request):
         image_data = body.get("image_data")
         top_k = body.get("top_k", 5)
         class_id = body.get("class_id")
+        desc_mode = body.get("desc_mode", "medium")
+
+        if desc_mode not in ("short", "medium", "long"):
+            desc_mode = "medium"
 
         if not image_data:
             return JsonResponse({"error": "image_data is required"}, status=400)
@@ -27,7 +31,7 @@ def card_search_api(request):
         image_bytes = base64.b64decode(image_data)
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
-        results = search_similar_cards(image, top_k=top_k, class_id=class_id)
+        results = search_similar_cards(image, top_k=top_k, class_id=class_id, desc_mode=desc_mode)
 
         return JsonResponse({
             "results": results,

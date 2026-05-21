@@ -305,9 +305,59 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.cards-section h3 {
-  margin: 0 0 16px;
+.cards-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.cards-header h3 {
+  margin: 0;
   color: #111827;
+}
+
+.desc-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.desc-mode-toggle .toggle-label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-right: 4px;
+}
+
+.desc-mode-toggle .btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: #374151;
+}
+
+.desc-mode-toggle .btn:hover {
+  background: #f3f4f6;
+}
+
+.desc-mode-badge {
+  font-size: 11px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.desc-mode-toggle .btn.btn-active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
 }
 
 .cards-grid {

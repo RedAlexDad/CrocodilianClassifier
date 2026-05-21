@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { CLASS_COLORS, drawMasksOnCanvas } from "@/features/segmentation/segmentUtils";
 import { cropDetection, canvasToDataUrl } from "@/features/segmentation/cropUtils";
-import { useCardSearch } from "@/hooks/useCardSearch";
+import { useCardSearch, type DescMode } from "@/hooks/useCardSearch";
 import type { Detection } from "@/features/segmentation/segmentUtils";
 import "./SegmenterWidget.css";
 
@@ -19,6 +19,7 @@ export function SegmenterWidget() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const [searchingIdx, setSearchingIdx] = useState<number | null>(null);
+  const [descMode, setDescMode] = useState<DescMode>('medium');
   const { results: cardResults, isLoading: cardsLoading, searchCards } = useCardSearch();
   const [searchedDetIdx, setSearchedDetIdx] = useState<number | null>(null);
 
@@ -114,12 +115,12 @@ export function SegmenterWidget() {
     try {
       const cropCanvas = cropDetection(img, detection);
       const dataUrl = canvasToDataUrl(cropCanvas);
-      await searchCards(dataUrl, detection.class_id);
+      await searchCards(dataUrl, detection.class_id, descMode);
       setSearchedDetIdx(idx);
     } finally {
       setSearchingIdx(null);
     }
-  }, [searchCards]);
+  }, [searchCards, descMode]);
 
   const CLASS_NAMES_RU = ["Аллигатор", "Кайман", "Крокодил"];
 
@@ -206,6 +207,18 @@ export function SegmenterWidget() {
         {detections.length > 0 && (
           <div className="results-list">
             <h3>Обнаруженные объекты:</h3>
+            <div className="desc-mode-toggle">
+              <span className="toggle-label">Описание карточек:</span>
+              {(['short', 'medium', 'long'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  className={`btn btn-small ${descMode === mode ? 'btn-active' : ''}`}
+                  onClick={() => setDescMode(mode)}
+                >
+                  {mode === 'short' ? '5-7 слов' : mode === 'medium' ? '12-15 слов' : '25-35 слов'}
+                </button>
+              ))}
+            </div>
             {detections.map((det, idx) => {
               const color = CLASS_COLORS[det.class_id] || { r: 128, g: 128, b: 128 };
               return (
@@ -240,9 +253,14 @@ export function SegmenterWidget() {
 
         {cardResults.length > 0 && searchedDetIdx !== null && detections[searchedDetIdx] && (
           <div className="cards-section">
-            <h3>
-              Похожие карточки для: {CLASS_NAMES_RU[detections[searchedDetIdx].class_id]}
-            </h3>
+            <div className="cards-header">
+              <h3>
+                Похожие карточки для: {CLASS_NAMES_RU[detections[searchedDetIdx].class_id]}
+              </h3>
+              <span className="desc-mode-badge">
+                {descMode === 'short' ? '5-7 слов' : descMode === 'medium' ? '12-15 слов' : '25-35 слов'}
+              </span>
+            </div>
             <div className="cards-grid">
               {cardResults.map((card) => {
                 const cardClassId = Math.floor((card.card_id - 1) / 12);
