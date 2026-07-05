@@ -14,24 +14,24 @@ OPTIMIZERS_TL = ["adam", "adagrad", "rmsprop"]
 
 MODEL_ALIASES = {
     "yolov8n-seg":            "yolov8n-seg.pt",
-    "yolov8n-seg-sgd":       "yolov8n-seg.pt",
+    "yolov8s-seg":            "yolov8s-seg.pt",
+    "yolov8m-seg":            "yolov8m-seg.pt",
+    "yolov8l-seg":            "yolov8l-seg.pt",
+    "yolov8x-seg":            "yolov8x-seg.pt",
     "yolov8n-seg-adamw":     "yolov8n-seg.pt",
-    "yolov8n-seg-long":       "yolov8n-seg.pt",
-    "yolov8n-seg-long-sgd":  "yolov8n-seg.pt",
-    "yolov8n-seg-long-adamw":"yolov8n-seg.pt",
     "yolov8n-seg-coco-adamw":"yolov8n-seg.pt",
 }
 
 YOLO_MODELS = list(MODEL_ALIASES.keys())
 
 SEGMENT_CONFIGS = {
-    "yolov8n-seg":            {"default_optimizer": "Adam",  "default_epochs": 20,  "default_batch": 8,  "default_lr": 0.001},
-    "yolov8n-seg-sgd":       {"default_optimizer": "SGD",   "default_epochs": 20,  "default_batch": 8,  "default_lr": 0.001},
+    "yolov8n-seg":            {"default_optimizer": "AdamW", "default_epochs": 50, "default_batch": 8,  "default_lr": 0.0005},
+    "yolov8s-seg":            {"default_optimizer": "AdamW", "default_epochs": 50, "default_batch": 8,  "default_lr": 0.0005},
+    "yolov8m-seg":            {"default_optimizer": "AdamW", "default_epochs": 50, "default_batch": 8,  "default_lr": 0.0005},
+    "yolov8l-seg":            {"default_optimizer": "AdamW", "default_epochs": 50, "default_batch": 8,  "default_lr": 0.0005},
+    "yolov8x-seg":            {"default_optimizer": "AdamW", "default_epochs": 50, "default_batch": 8,  "default_lr": 0.0005},
     "yolov8n-seg-adamw":     {"default_optimizer": "AdamW", "default_epochs": 20,  "default_batch": 8,  "default_lr": 0.001},
-    "yolov8n-seg-long":       {"default_optimizer": "Adam",  "default_epochs": 50, "default_batch": 8, "default_lr": 0.0005},
-    "yolov8n-seg-long-sgd":   {"default_optimizer": "SGD",   "default_epochs": 50, "default_batch": 8, "default_lr": 0.0005},
-    "yolov8n-seg-long-adamw": {"default_optimizer": "AdamW", "default_epochs": 50, "default_batch": 8, "default_lr": 0.0005},
-    "yolov8n-seg-coco-adamw": {"default_optimizer": "AdamW", "default_epochs": 50, "default_batch": 8, "default_lr": 0.0005},
+    "yolov8n-seg-coco-adamw": {"default_optimizer": "AdamW", "default_epochs": 50, "default_batch": 8,  "default_lr": 0.0005},
 }
 
 MODEL_CONFIGS = {
