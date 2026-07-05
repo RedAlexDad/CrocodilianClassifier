@@ -164,33 +164,31 @@ def train_yolo_segment(
             save_period=10,
         )
 
-        best_model_path = project_dir / "weights" / "best.pt"
-        last_model_path = project_dir / "weights" / "last.pt"
-        export_dir = project_dir / "weights"
-
+        save_dir = Path(results.save_dir) if hasattr(results, "save_dir") else project_dir
         safe_name = model_name.replace("-", "_").replace(".", "_")
 
-        if best_model_path.exists():
-            mlflow.log_artifact(str(best_model_path), "model")
+        for f in save_dir.iterdir():
+            if f.is_file():
+                mlflow.log_artifact(str(f), "artifacts")
 
-            onnx_file = export_dir / "best.onnx"
-            if onnx_file.exists():
-                mlflow.log_artifact(str(onnx_file), "onnx_model")
-                shutil.copy(onnx_file, ROOT_DIR / "data" / "models" / f"{safe_name}_best.onnx")
+        weights_dir = save_dir / "weights"
+        if weights_dir.exists():
+            for f in weights_dir.iterdir():
+                if f.is_file():
+                    mlflow.log_artifact(str(f), "weights")
 
-        if last_model_path.exists():
-            mlflow.log_artifact(str(last_model_path), "model_last")
+            best_pt = weights_dir / "best.pt"
+            if best_pt.exists():
+                shutil.copy(best_pt, ROOT_DIR / "data" / "models" / f"{safe_name}_best.pt")
 
-        if (export_dir / "best.pt").exists():
-            shutil.copy(export_dir / "best.pt", ROOT_DIR / "data" / "models" / f"{safe_name}_best.pt")
-
-        results_plot = project_dir / "results.png"
-        if results_plot.exists():
-            mlflow.log_artifact(str(results_plot), "artifacts")
-
-        confusion_matrix = project_dir / "confusion_matrix.png"
-        if confusion_matrix.exists():
-            mlflow.log_artifact(str(confusion_matrix), "artifacts")
+            onnx_export = weights_dir / "best.onnx"
+            if not onnx_export.exists():
+                try:
+                    model.export(format="onnx", imgsz=imgsz, half=False)
+                except Exception as e:
+                    print(f"  ONNX export skipped: {e}")
+            if onnx_export.exists():
+                shutil.copy(onnx_export, ROOT_DIR / "data" / "models" / f"{safe_name}_best.onnx")
 
         metrics = {}
         if hasattr(results, "results_dict"):
@@ -201,7 +199,7 @@ def train_yolo_segment(
                     metrics[clean_key] = value
 
         print(f"\n  Training complete!")
-        print(f"  Best model: {best_model_path}")
+        print(f"  Best model: {weights_dir / 'best.pt'}")
 
         return metrics
 
