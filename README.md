@@ -61,6 +61,26 @@ make train-resnet20   # Обучить ResNet20
 make train-all        # Обучить все модели
 ```
 
+### Сегментация (YOLOv8)
+
+Суффикс в названии модели (`n`, `s`, `m`, `l`, `xl`) — масштаб архитектуры: количество слоёв (depth) и ширина каналов (width). Чем больше, тем выше точность, но медленнее и требовательнее к VRAM:
+
+| Модель | Суффикс | Параметры | mAP50-95 (COCO) |
+|--------|---------|-----------|-----------------|
+| Nano   | `n`     | 3.4M      | 37.3            |
+| Small  | `s`     | 11.8M     | 44.9            |
+| Medium | `m`     | 27.3M     | 50.5            |
+| Large  | `l`     | 46.5M     | 52.9            |
+| XLarge | `xl`    | 56.9M     | 53.9            |
+
+```bash
+make train-yolo-n     # yolov8n-seg (nano)
+make train-yolo-s     # yolov8s-seg (small)
+make train-yolo-m     # yolov8m-seg (medium)
+make train-yolo-l     # yolov8l-seg (large)
+make train-yolo-xl    # yolov8x-seg (xlarge)
+```
+
 ### MLflow
 
 ```bash

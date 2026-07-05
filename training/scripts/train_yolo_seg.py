@@ -106,6 +106,29 @@ def train_yolo_segment(
     run_name = f"{model_name}-e{epochs}-bs{batch}-{optimizer.lower()}"
     project_dir = ROOT_DIR / "yolo8_segment" / run_name
 
+    def log_epoch_metrics(trainer):
+        """Callback для логирования per-epoch метрик в MLflow в реальном времени."""
+        epoch = trainer.epoch + 1
+        metrics = trainer.metrics
+        if metrics:
+            for key, value in metrics.items():
+                if isinstance(value, (int, float)):
+                    clean_key = key.replace("[", "_").replace("]", "_").replace("(", "_").replace(")", "_").replace("/", "_")
+                    mlflow.log_metric(clean_key, value, step=epoch)
+        if hasattr(trainer, "tloss") and trainer.tloss is not None:
+            tloss = trainer.tloss
+            if hasattr(tloss, "item"):
+                if tloss.numel() == 1:
+                    mlflow.log_metric("train_loss", tloss.item(), step=epoch)
+                else:
+                    for i, name in enumerate(["box", "seg", "cls", "dfl", "sem"][:tloss.numel()]):
+                        mlflow.log_metric(f"train_{name}_loss", tloss[i].item(), step=epoch)
+            else:
+                mlflow.log_metric("train_loss", float(tloss), step=epoch)
+        print(f"  Epoch {epoch:3d} metrics logged to MLflow")
+
+    model.add_callback("on_train_epoch_end", log_epoch_metrics)
+
     with mlflow.start_run(run_name=run_name):
         mlflow.log_params({
             "model": model_name,
