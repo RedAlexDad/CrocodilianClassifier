@@ -63,6 +63,10 @@ media/models/*
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
+# Training outputs
+yolo8_segment/*/
+training/*.pt
+
 # OS
 Thumbs.db
 .DS_Store
