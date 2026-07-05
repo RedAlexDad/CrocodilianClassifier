@@ -14,11 +14,13 @@ S3_BUCKET ?= dz1-media
 S3_ENDPOINT ?= http://localhost:9000
 MLFLOW_URI ?= http://localhost:5000
 
-GREEN  := $(shell tput setaf 2 2>/dev/null || echo "")
-YELLOW := $(shell tput setaf 3 2>/dev/null || echo "")
-BLUE   := $(shell tput setaf 4 2>/dev/null || echo "")
-RED    := $(shell tput setaf 1 2>/dev/null || echo "")
-NC     := $(shell tput sgr0 2>/dev/null || echo "")
+BOLD   := $(shell printf '\033[1m' 2>/dev/null || echo "")
+GREEN  := $(shell printf '\033[32;1m' 2>/dev/null || echo "")
+YELLOW := $(shell printf '\033[33;1m' 2>/dev/null || echo "")
+BLUE   := $(shell printf '\033[34;1m' 2>/dev/null || echo "")
+CYAN   := $(shell printf '\033[36;1m' 2>/dev/null || echo "")
+RED    := $(shell printf '\033[31;1m' 2>/dev/null || echo "")
+NC     := $(shell printf '\033[0m' 2>/dev/null || echo "")
 
 MODEL ?= cnn
 OPTIMIZER ?= adam
